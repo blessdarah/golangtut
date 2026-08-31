@@ -10,24 +10,24 @@ type Store interface {
 }
 
 type Address struct {
-	Zip    string
-	City   string
-	Street string
+	Zip    *string `json:"zip"`
+	City   string  `json:"city" validate:"required"`
+	Street string  `json:"street" validate:"required"`
 }
 
 type User struct {
-	Address
-	Name  string
-	Age   int
-	Email string
+	Address `json:"address"`
+	Name    string `json:"name" validate:"required"`
+	Age     *int   `json:"age,omitempty"`
+	Email   string `json:"email" validate:"required"`
 }
 
 type userStore struct {
 	users []User
 }
 
-func NewUserStore() userStore {
-	return userStore{
+func NewUserStore() *userStore {
+	return &userStore{
 		users: []User{},
 	}
 }
@@ -41,12 +41,24 @@ func (u *User) validate() error {
 		return errors.New("name must be at least 3 characters")
 	}
 
-	if u.Age < 18 {
+	if u.Age != nil && *u.Age < 18 {
 		return errors.New("age must be at least 18")
 	}
 
 	if u.Email == "" {
 		return errors.New("email is required")
+	}
+
+	if u.Zip != nil && len(*u.Zip) != 5 {
+		return errors.New("zip code must be 5 digits")
+	}
+
+	if u.Street == "" {
+		return errors.New("street is required")
+	}
+
+	if u.City == "" {
+		return errors.New("city is required")
 	}
 
 	return nil

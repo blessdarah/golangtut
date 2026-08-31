@@ -1,0 +1,19 @@
+@url = http://localhost:8080
+
+###   GET /users
+GET {{url}}/users
+Content-Type: application/json
+
+###   POST /users
+POST {{url}}/users/create
+Content-Type: application/json
+
+{
+    "name": "Ateya",
+    "email": "ateya@gmail.com",
+    "address": {
+        "city": "London",
+        "street": "United Kingdom"
+    }
+}
+
