@@ -1,13 +1,17 @@
 package user
 
-import "errors"
+import (
+	"errors"
+)
 
 type Store interface {
-	Add(user User) error
+	Add(user User)
 	FindByEmail(email string) (User, error)
 	RemoveByEmail(email string) error
 	GetAll() []User
 }
+
+type ValidationError map[string]string
 
 type Address struct {
 	Zip    *string `json:"zip"`
@@ -32,46 +36,45 @@ func NewUserStore() *userStore {
 	}
 }
 
-func (u *User) validate() error {
+func (u *User) Validate() *ValidationError {
+	errs := ValidationError{}
 	if u.Name == "" {
-		return errors.New("name is required")
+		errs["name"] = "name is required"
 	}
 
 	if len(u.Name) < 3 {
-		return errors.New("name must be at least 3 characters")
+		errs["name"] = "name must be at least 3 characters"
 	}
 
 	if u.Age != nil && *u.Age < 18 {
-		return errors.New("age must be at least 18")
+		errs["age"] = "age must be at least 18"
 	}
 
 	if u.Email == "" {
-		return errors.New("email is required")
+		errs["email"] = "email is required"
 	}
 
 	if u.Zip != nil && len(*u.Zip) != 5 {
-		return errors.New("zip code must be 5 digits")
+		errs["zip"] = "zip code must be 5 digits"
 	}
 
 	if u.Street == "" {
-		return errors.New("street is required")
+		errs["street"] = "street is required"
 	}
 
 	if u.City == "" {
-		return errors.New("city is required")
+		errs["city"] = "city is required"
+	}
+
+	if len(errs) > 0 {
+		return &errs
 	}
 
 	return nil
 }
 
-func (u *userStore) Add(user User) error {
-	err := user.validate()
-	if err != nil {
-		return err
-	}
-
+func (u *userStore) Add(user User) {
 	u.users = append(u.users, user)
-	return nil
 }
 
 func (u *userStore) FindByEmail(email string) (User, error) {

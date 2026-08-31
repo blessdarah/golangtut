@@ -1,7 +1,7 @@
-@url = http://localhost:8080
+@url = http://localhost:1323
 
-###   GET /users
-GET {{url}}/users
+###   GET /
+GET {{url}}/
 Content-Type: application/json
 
 ###   POST /users
@@ -9,11 +9,12 @@ POST {{url}}/users/create
 Content-Type: application/json
 
 {
-    "name": "Ateya",
-    "email": "ateya@gmail.com",
+    "name": "James",
+    "email": "james@gmail.com",
     "address": {
         "city": "London",
-        "street": "United Kingdom"
+        "street": "United Kingdom",
+        "zip": "00834"
     }
 }
 

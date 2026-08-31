@@ -2,73 +2,54 @@ package main
 
 import (
 	"blessdarah/tuts/user"
-	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
+
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 )
 
 type api struct {
 	store user.Store
 }
 
-func (a *api) ListUsers(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	users := a.store.GetAll()
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(users)
+func (a *api) listUsers(c *echo.Context) error {
+	return c.JSON(http.StatusOK, a.store.GetAll())
 }
 
-// Adduser adds a new user to the store.
-// example: POST http://localhost:8080/users
-// Content-Type: application/json
-//
-//	{
-//	    "name": "John Doe",
-//	    "age": 30,
-//	    "email": "john@doe.com"
-//	    "zipCode": "12345",
-//	    "city": "New York",
-//	    "street": "Broadway"
-//	}
-func (a *api) AddUser(w http.ResponseWriter, r *http.Request) {
-
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
+func (a *api) createUser(c *echo.Context) error {
 	var user user.User
 
-	err := json.NewDecoder(r.Body).Decode(&user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if err := c.Bind(&user); err != nil {
+		return c.JSON(http.StatusBadRequest, err)
 	}
 
-	err = a.store.Add(user)
+	err := user.Validate()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return c.JSON(
+			http.StatusBadRequest,
+			map[string]any{"errors": err},
+		)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	a.store.Add(user)
+
+	return c.JSON(http.StatusCreated, user)
 }
 
 func main() {
-	api := &api{
+	e := echo.New()
+
+	api := api{
 		store: user.NewUserStore(),
 	}
 
-	mux := http.NewServeMux()
+	e.Use(middleware.RequestLogger())
+	e.Use(middleware.Recover())
 
-	mux.HandleFunc("/users", api.ListUsers)
-	mux.HandleFunc("/users/create", api.AddUser)
+	e.GET("/users", api.listUsers)
+	e.POST("/users", api.createUser)
 
-	fmt.Println("Server started on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
-
+	if err := e.Start(":1323"); err != nil {
+		e.Logger.Error("failed to start server", "error", err)
+	}
 }
