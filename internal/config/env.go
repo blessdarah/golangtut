@@ -11,10 +11,12 @@ import (
 type AppEnv struct {
 	AppPort     string
 	AppHost     string
-	DB_NAME     string
+	DB_HOST     string
 	DB_PORT     string
 	DB_USER     string
 	DB_PASSWORD string
+	DB_NAME     string
+	DB_SSLMODE  string
 	PageSize    int
 	Debug       bool
 	Env         string
@@ -46,10 +48,12 @@ func LoadConfig() *AppEnv {
 		AppPort: panicIfErr("APP_PORT"),
 		AppHost: panicIfErr("APP_HOST"),
 
-		DB_NAME:     panicIfErr("DB_NAME"),
+		DB_HOST:     panicIfErr("DB_HOST"),
 		DB_PORT:     panicIfErr("DB_PORT"),
 		DB_USER:     panicIfErr("DB_USER"),
 		DB_PASSWORD: panicIfErr("DB_PASSWORD"),
+		DB_NAME:     panicIfErr("DB_NAME"),
+		DB_SSLMODE:  panicIfErr("DB_SSLMODE"),
 		MigrateURL:  panicIfErr("MIGRATE_DATABASE_URL"),
 
 		PageSize: panicIfErrInt("PAGE_SIZE"),

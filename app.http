@@ -5,7 +5,7 @@ GET {{url}}/users
 Content-Type: application/json
 
 ###   POST /users
-POST {{url}}/users/create
+POST {{url}}/users/
 Content-Type: application/json
 
 {

@@ -8,7 +8,7 @@ tmp_dir = "tmp"
   exclude_dir = ["tmp", "internal/db/migrations"]
   delay = 1000
   stop_on_error = true
-  poll = false
+  poll = true
 
 [log]
   time = true

@@ -5,6 +5,9 @@ dockerFile = "deploy/Dockerfile"
 dev: 
 	@docker-compose --env-file .env -f $(composeFile) up -d
 
+down: 
+	@docker-compose --env-file .env -f $(composeFile) down
+
 logs: 
 	@docker-compose --env-file .env -f $(composeFile) logs -f 
 
@@ -15,4 +18,9 @@ migrate:
 	@migrate -database '$(dbUrl)' -path internal/db/migrations up
 
 rollback:
+	@migrate -database '$(dbUrl)' -path internal/db/migrations down 1
+
+clean-db:
 	@migrate -database '$(dbUrl)' -path internal/db/migrations down -all
+
+reset-db: clean-db migrate
