@@ -30,6 +30,7 @@ func NewRepository(db *gorm.DB) *Repository {
 func (r *Repository) List() []User {
 	var users []User
 	r.db.Find(&users)
+
 	return users
 }
 

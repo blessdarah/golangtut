@@ -7,6 +7,19 @@ import (
 
 type HttpValidationError map[string]map[string]string
 
+func (e HttpValidationError) Fields() map[string]string {
+	if e == nil {
+		return nil
+	}
+
+	errs, ok := e["errors"]
+	if !ok {
+		return nil
+	}
+
+	return errs
+}
+
 func FormatError(err string) HttpValidationError {
 	errMap := make(map[string]string)
 

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"blessdarah/tuts/internal/auth"
 	"blessdarah/tuts/internal/config"
 	"blessdarah/tuts/internal/user"
 	"fmt"
@@ -43,29 +44,47 @@ func NewApp(cfg *config.AppEnv) (*App, error) {
 	}, nil
 }
 
-// RegisterRoutes registers routes for the app
-func (a *App) RegisterRoutes(userHandler *user.Handler) {
+func (a *App) RegisterRoutes(
+	userHandler *user.Handler,
+	authHandler *auth.Handler,
+) {
 	a.router.Route("/users", func(r chi.Router) {
 		r.Get("/", userHandler.GetUsers)
-		r.Post("/", userHandler.CreateUser)
+	})
+
+	a.router.Route("/auth", func(r chi.Router) {
+		r.Post("/signup", authHandler.Signup)
+		r.Get("/me", authHandler.Me)
+	})
+
+	a.router.Route("/oauth", func(r chi.Router) {
+		r.Post("/token", authHandler.Token)
 	})
 }
 
 func (a *App) Run() {
+	userRepo := user.NewRepository(a.db)
+	userSvc := user.NewService(userRepo)
+	userHandler := user.NewHandler(a.config, userSvc)
 
-	// repositories
-	repo := user.NewRepository(a.db)
+	authService := auth.NewService(userRepo)
+	oauthServer, err := auth.NewOAuthServer(
+		a.config.OAuthClientID,
+		a.config.OAuthClientSecret,
+		authService,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// app
-	userApp := user.NewService(repo)
+	authHandler := auth.NewAuthHandler(
+		authService,
+		oauthServer,
+		a.logger.With(slog.String("module", "auth")),
+	)
 
-	// handlers
-	userHandler := user.NewHandler(a.config, userApp)
+	a.RegisterRoutes(userHandler, authHandler)
 
-	// register routes
-	a.RegisterRoutes(userHandler)
-
-	// start server
 	a.logger.Info(fmt.Sprintf("Server is running on port %s", a.config.AppPort))
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", a.config.AppPort), a.router))

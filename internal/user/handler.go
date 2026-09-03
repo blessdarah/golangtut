@@ -2,7 +2,9 @@ package user
 
 import (
 	"blessdarah/tuts/internal/config"
+	"blessdarah/tuts/internal/lib"
 	"encoding/json"
+	"errors"
 	"log/slog"
 
 	"net/http"
@@ -29,8 +31,9 @@ func NewHandler(cfg *config.AppEnv, app userService) *Handler {
 }
 
 func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("create user entry")
+	h.logger.Info("list users")
 	users := h.app.GetAll()
+
 	userList := make([]UserResponse, 0, len(users))
 	for _, user := range users {
 		userList = append(userList, UserResponse{
@@ -40,67 +43,73 @@ func (h *Handler) GetUsers(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	h.logger.Info("user created")
-	json.NewEncoder(w).Encode(userList)
+	h.logger.Info("users fetched", "count", len(userList))
+	lib.WriteJSON(w, r, http.StatusOK, userList)
 }
 
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
-
 	var cr CreateUserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&cr); err != nil {
 		h.logger.Error("decode create user", "error", err)
-
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "invalid json format",
+		lib.WriteProblem(w, r, lib.ProblemDetails{
+			Type:   lib.ProblemTypeValidationError,
+			Title:  "Bad Request",
+			Status: http.StatusBadRequest,
+			Detail: "invalid JSON format",
 		})
 		return
 	}
 
 	err := cr.Validate()
-
 	if len(err) > 0 {
 		h.logger.Error("validate user", "error", err)
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(err)
-		return
-	}
-
-	user := cr.ToUser()
-
-	// get user by email
-	_, getErr := h.app.GetByEmail(user.Email)
-	if getErr == nil {
-		h.logger.Error("duplicate user", "error", getErr)
-		w.WriteHeader(http.StatusConflict)
-
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "user with this email already exists",
+		lib.WriteProblem(w, r, lib.ProblemDetails{
+			Type:   lib.ProblemTypeValidationError,
+			Title:  "Validation Failed",
+			Status: http.StatusBadRequest,
+			Detail: "one or more fields are invalid",
+			Errors: err.Fields(),
 		})
 		return
 	}
 
-	userID, addErr := h.app.AddUser(user)
+	u := cr.ToUser()
+	_, getErr := h.app.GetByEmail(u.Email)
+	if getErr == nil {
+		h.logger.Error("duplicate user", "email", u.Email)
+		lib.WriteProblem(w, r, lib.ProblemDetails{
+			Type:   lib.ProblemTypeDuplicateRes,
+			Title:  "Conflict",
+			Status: http.StatusConflict,
+			Detail: "user with this email already exists",
+		})
+		return
+	}
+
+	if !errors.Is(getErr, ErrUserNotFound) {
+		h.logger.Error("get user by email", "error", getErr)
+		lib.WriteProblem(w, r, lib.ProblemDetails{
+			Type:   lib.ProblemTypeInternalError,
+			Title:  "Internal Server Error",
+			Status: http.StatusInternalServerError,
+			Detail: "failed to verify existing user",
+		})
+		return
+	}
+
+	userID, addErr := h.app.AddUser(u)
 	if addErr != nil {
 		h.logger.Error("add user", "error", addErr)
-		w.WriteHeader(http.StatusInternalServerError)
-
-		json.NewEncoder(w).Encode(map[string]string{
-			"error": "internal server error",
+		lib.WriteProblem(w, r, lib.ProblemDetails{
+			Type:   lib.ProblemTypeInternalError,
+			Title:  "Internal Server Error",
+			Status: http.StatusInternalServerError,
+			Detail: "failed to create user",
 		})
 		return
 	}
 
-	w.WriteHeader(201)
-	ur := UserResponse{
-		ID:    *userID,
-		Name:  user.Name,
-		Email: user.Email,
-	}
-
-	json.NewEncoder(w).Encode(ur)
-
+	ur := UserResponse{ID: *userID, Name: u.Name, Email: u.Email}
+	lib.WriteJSON(w, r, http.StatusCreated, ur)
 }

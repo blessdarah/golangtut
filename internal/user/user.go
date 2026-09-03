@@ -1,6 +1,9 @@
 package user
 
 import (
+	"blessdarah/tuts/internal/lib"
+	"fmt"
+
 	"github.com/google/uuid"
 
 	"gorm.io/gorm"
@@ -18,6 +21,12 @@ type User struct {
 // Hooks/Interceptor to add user id durint create
 func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
 	id := uuid.New().String()
+	hashedPassword, hashErr := lib.HashPassword(u.Password)
+	if hashErr != nil {
+		return fmt.Errorf("failed to hash password: %w", hashErr)
+	}
+	u.Password = hashedPassword
 	u.ID = &id
+
 	return
 }
