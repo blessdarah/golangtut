@@ -21,6 +21,15 @@ rollback:
 	@migrate -database '$(dbUrl)' -path internal/db/migrations down 1
 
 clean-db:
-	@migrate -database '$(dbUrl)' -path internal/db/migrations down -all
+	@set -e; \
+	version_output="$$(migrate -database '$(dbUrl)' -path internal/db/migrations version 2>&1 || true)"; \
+	case "$$version_output" in \
+		*"(dirty)"*) \
+			dirty_version="$${version_output%% *}"; \
+			echo "database is dirty at version $$dirty_version; forcing clean migration state"; \
+			migrate -database '$(dbUrl)' -path internal/db/migrations force $$dirty_version; \
+			;; \
+	esac; \
+	migrate -database '$(dbUrl)' -path internal/db/migrations down -all
 
 reset-db: clean-db migrate

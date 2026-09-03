@@ -2,6 +2,7 @@ package auth
 
 import (
 	"blessdarah/tuts/internal/lib"
+	"blessdarah/tuts/internal/model"
 	"blessdarah/tuts/internal/user"
 	"encoding/json"
 	"errors"
@@ -10,8 +11,8 @@ import (
 )
 
 type authService interface {
-	Signup(user user.User) (*string, error)
-	GetByID(id string) (user.User, error)
+	Signup(user model.User) (*string, error)
+	GetByID(id string) (model.User, error)
 }
 
 type Handler struct {

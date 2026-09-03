@@ -55,6 +55,8 @@ Clients that previously parsed legacy error shapes such as `{"error":"..."}` or 
 
 - `OAUTH_CLIENT_ID`
 - `OAUTH_CLIENT_SECRET`
+- `OAUTH_ACCESS_TOKEN_TTL_MINUTES` (default: `120`)
+- `OAUTH_REFRESH_TOKEN_TTL_HOURS` (default: `24`)
 
 ### Signup
 

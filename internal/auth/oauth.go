@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
+	oauth2 "github.com/go-oauth2/oauth2/v4"
 	"github.com/go-oauth2/oauth2/v4/manage"
 	"github.com/go-oauth2/oauth2/v4/models"
 	"github.com/go-oauth2/oauth2/v4/server"
@@ -20,13 +22,24 @@ type oauthServer struct {
 	server *server.Server
 }
 
-func NewOAuthServer(clientID, clientSecret string, svc *Service) (OAuthServer, error) {
+func NewOAuthServer(clientID, clientSecret string, accessTokenTTLMinutes, refreshTokenTTLHours int, svc *Service) (OAuthServer, error) {
 	if clientID == "" || clientSecret == "" {
 		return nil, errors.New("missing oauth client configuration")
+	}
+	if accessTokenTTLMinutes <= 0 {
+		return nil, errors.New("invalid oauth access token ttl")
+	}
+	if refreshTokenTTLHours <= 0 {
+		return nil, errors.New("invalid oauth refresh token ttl")
 	}
 
 	manager := manage.NewDefaultManager()
 	manager.MustTokenStorage(store.NewMemoryTokenStore())
+	manager.SetPasswordTokenCfg(&manage.Config{
+		AccessTokenExp:    time.Duration(accessTokenTTLMinutes) * time.Minute,
+		RefreshTokenExp:   time.Duration(refreshTokenTTLHours) * time.Hour,
+		IsGenerateRefresh: true,
+	})
 
 	clientStore := store.NewClientStore()
 	err := clientStore.Set(clientID, &models.Client{
@@ -39,6 +52,7 @@ func NewOAuthServer(clientID, clientSecret string, svc *Service) (OAuthServer, e
 	manager.MapClientStorage(clientStore)
 
 	srv := server.NewServer(server.NewConfig(), manager)
+	srv.SetAllowedGrantType(oauth2.PasswordCredentials)
 	srv.SetClientInfoHandler(server.ClientFormHandler)
 	srv.SetPasswordAuthorizationHandler(func(ctx context.Context, clientID, username, password string) (string, error) {
 		return svc.ValidateCredentials(username, password)

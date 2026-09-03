@@ -2,6 +2,7 @@ package auth
 
 import (
 	"blessdarah/tuts/internal/lib"
+	"blessdarah/tuts/internal/model"
 	"blessdarah/tuts/internal/user"
 	"errors"
 	"fmt"
@@ -11,9 +12,9 @@ var ErrInvalidCredentials = errors.New("invalid credentials")
 var ErrDuplicateUser = errors.New("duplicate user")
 
 type userRepository interface {
-	FindByEmail(email string) (user.User, error)
-	FindById(id string) (user.User, error)
-	Create(user user.User) (*string, error)
+	FindByEmail(email string) (model.User, error)
+	FindById(id string) (model.User, error)
+	Create(user model.User) (*string, error)
 }
 
 type Service struct {
@@ -40,7 +41,7 @@ func (s *Service) ValidateCredentials(email, password string) (string, error) {
 	return *u.ID, nil
 }
 
-func (s *Service) Signup(u user.User) (*string, error) {
+func (s *Service) Signup(u model.User) (*string, error) {
 	_, err := s.repo.FindByEmail(u.Email)
 	if err == nil {
 		return nil, ErrDuplicateUser
@@ -53,6 +54,6 @@ func (s *Service) Signup(u user.User) (*string, error) {
 	return s.repo.Create(u)
 }
 
-func (s *Service) GetByID(id string) (user.User, error) {
+func (s *Service) GetByID(id string) (model.User, error) {
 	return s.repo.FindById(id)
 }

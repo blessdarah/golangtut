@@ -9,20 +9,22 @@ import (
 )
 
 type AppEnv struct {
-	AppPort           string
-	AppHost           string
-	DB_HOST           string
-	DB_PORT           string
-	DB_USER           string
-	DB_PASSWORD       string
-	DB_NAME           string
-	DB_SSLMODE        string
-	PageSize          int
-	Debug             bool
-	Env               string
-	MigrateURL        string
-	OAuthClientID     string
-	OAuthClientSecret string
+	AppPort                    string
+	AppHost                    string
+	DB_HOST                    string
+	DB_PORT                    string
+	DB_USER                    string
+	DB_PASSWORD                string
+	DB_NAME                    string
+	DB_SSLMODE                 string
+	PageSize                   int
+	Debug                      bool
+	Env                        string
+	MigrateURL                 string
+	OAuthClientID              string
+	OAuthClientSecret          string
+	OAuthAccessTokenTTLMinutes int
+	OAuthRefreshTokenTTLHours  int
 }
 
 func panicIfErr(val string) string {
@@ -42,6 +44,20 @@ func panicIfErrInt(val string) int {
 	return v
 }
 
+func envIntOrDefault(val string, fallback int) int {
+	v, ok := os.LookupEnv(val)
+	if !ok || v == "" {
+		return fallback
+	}
+
+	parsed, err := strconv.Atoi(v)
+	if err != nil {
+		panic(fmt.Sprintf("invalid %s: %s", val, err))
+	}
+
+	return parsed
+}
+
 func LoadConfig() *AppEnv {
 
 	_ = godotenv.Load()
@@ -50,15 +66,17 @@ func LoadConfig() *AppEnv {
 		AppPort: panicIfErr("APP_PORT"),
 		AppHost: panicIfErr("APP_HOST"),
 
-		DB_HOST:           panicIfErr("DB_HOST"),
-		DB_PORT:           panicIfErr("DB_PORT"),
-		DB_USER:           panicIfErr("DB_USER"),
-		DB_PASSWORD:       panicIfErr("DB_PASSWORD"),
-		DB_NAME:           panicIfErr("DB_NAME"),
-		DB_SSLMODE:        panicIfErr("DB_SSLMODE"),
-		MigrateURL:        panicIfErr("MIGRATE_DATABASE_URL"),
-		OAuthClientID:     panicIfErr("OAUTH_CLIENT_ID"),
-		OAuthClientSecret: panicIfErr("OAUTH_CLIENT_SECRET"),
+		DB_HOST:                    panicIfErr("DB_HOST"),
+		DB_PORT:                    panicIfErr("DB_PORT"),
+		DB_USER:                    panicIfErr("DB_USER"),
+		DB_PASSWORD:                panicIfErr("DB_PASSWORD"),
+		DB_NAME:                    panicIfErr("DB_NAME"),
+		DB_SSLMODE:                 panicIfErr("DB_SSLMODE"),
+		MigrateURL:                 panicIfErr("MIGRATE_DATABASE_URL"),
+		OAuthClientID:              panicIfErr("OAUTH_CLIENT_ID"),
+		OAuthClientSecret:          panicIfErr("OAUTH_CLIENT_SECRET"),
+		OAuthAccessTokenTTLMinutes: envIntOrDefault("OAUTH_ACCESS_TOKEN_TTL_MINUTES", 120),
+		OAuthRefreshTokenTTLHours:  envIntOrDefault("OAUTH_REFRESH_TOKEN_TTL_HOURS", 24),
 
 		PageSize: panicIfErrInt("PAGE_SIZE"),
 		Debug:    panicIfErr("DEBUG") == "true",

@@ -1,6 +1,7 @@
 package user
 
 import (
+	"blessdarah/tuts/internal/model"
 	"errors"
 	"fmt"
 
@@ -27,8 +28,8 @@ func NewRepository(db *gorm.DB) *Repository {
 }
 
 // list returns all users
-func (r *Repository) List() []User {
-	var users []User
+func (r *Repository) List() []model.User {
+	var users []model.User
 	r.db.Find(&users)
 
 	return users
@@ -36,22 +37,22 @@ func (r *Repository) List() []User {
 
 // Create create a new user record
 // @returns error if any
-func (r *Repository) Create(user User) (*string, error) {
+func (r *Repository) Create(user model.User) (*string, error) {
 	return user.ID, r.db.Create(&user).Error
 }
 
 // FindByEmail finds a user by email
 // @returns user if found, error otherwise
-func (r *Repository) FindByEmail(email string) (User, error) {
-	var user User
+func (r *Repository) FindByEmail(email string) (model.User, error) {
+	var user model.User
 	err := r.db.Where("email = ?", email).First(&user).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return User{}, fmt.Errorf("%w: %v", ErrUserNotFound, err)
+		return model.User{}, fmt.Errorf("%w: %v", ErrUserNotFound, err)
 	}
 
 	if err != nil {
-		return User{}, fmt.Errorf("%w: %v", ErrInternal, err)
+		return model.User{}, fmt.Errorf("%w: %v", ErrInternal, err)
 	}
 
 	return user, nil
@@ -59,18 +60,18 @@ func (r *Repository) FindByEmail(email string) (User, error) {
 
 // FindById finds a user by id (uuid)
 // @returns user if found, error otherwise
-func (r *Repository) FindById(id string) (User, error) {
-	var user User
+func (r *Repository) FindById(id string) (model.User, error) {
+	var user model.User
 	err := r.db.Where("id = ?", id).First(&user).Error
 
 	// if user is not found
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return User{}, fmt.Errorf("%w: %v", ErrUserNotFound, err)
+		return model.User{}, fmt.Errorf("%w: %v", ErrUserNotFound, err)
 	}
 
 	if err != nil {
-		return User{}, fmt.Errorf("%w: %v", ErrInternal, err)
+		return model.User{}, fmt.Errorf("%w: %v", ErrInternal, err)
 	}
 
 	return user, nil
@@ -78,12 +79,12 @@ func (r *Repository) FindById(id string) (User, error) {
 
 // Update updates a user record
 // @returns error if any
-func (r *Repository) Update(user User) error {
+func (r *Repository) Update(user model.User) error {
 	return r.db.Save(&user).Error
 }
 
 // Delete deletes a user record
 // @returns error if any
 func (r *Repository) Delete(id string) error {
-	return r.db.Delete(&User{}, id).Error
+	return r.db.Delete(&model.User{}, id).Error
 }

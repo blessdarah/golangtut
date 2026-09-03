@@ -3,6 +3,7 @@ package app
 import (
 	"blessdarah/tuts/internal/auth"
 	"blessdarah/tuts/internal/config"
+	"blessdarah/tuts/internal/event"
 	"blessdarah/tuts/internal/user"
 	"fmt"
 	"log"
@@ -48,18 +49,24 @@ func (a *App) RegisterRoutes(
 	userHandler *user.Handler,
 	authHandler *auth.Handler,
 	authMiddleware func(http.Handler) http.Handler,
+	eventHandler *event.Handler,
 ) {
 
 	// auth routes
-	a.router.Route("/auth", func(r chi.Router) {
-		r.Post("/signup", authHandler.Signup)
-		r.Post("/login", authHandler.Token) // login
-	})
+	a.router.Post("/auth/signup", authHandler.Signup)
+	a.router.Post("/auth/login", authHandler.Token) // login
+
+	a.router.Get("/events/me", eventHandler.GetByUserID)
+	a.router.Get("/events", eventHandler.GetAll)
 
 	a.router.Group(func(r chi.Router) {
 		r.Use(authMiddleware)
 		r.Get("/auth/me", authHandler.Me)
 		r.Get("/users", userHandler.GetUsers)
+
+		// event routes
+		r.Post("/events", eventHandler.Create)
+
 	})
 
 }
@@ -68,16 +75,21 @@ func (a *App) Run() {
 	userRepo := user.NewRepository(a.db)
 	userSvc := user.NewService(userRepo)
 	userHandler := user.NewHandler(a.config, userSvc)
+	eventRepo := event.NewRepository(a.db)
 
 	authService := auth.NewService(userRepo)
 	oauthServer, err := auth.NewOAuthServer(
 		a.config.OAuthClientID,
 		a.config.OAuthClientSecret,
+		a.config.OAuthAccessTokenTTLMinutes,
+		a.config.OAuthRefreshTokenTTLHours,
 		authService,
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	eventService := event.NewService(eventRepo)
 
 	authHandler := auth.NewAuthHandler(
 		authService,
@@ -89,7 +101,12 @@ func (a *App) Run() {
 		a.logger.With(slog.String("module", "auth-middleware")),
 	)
 
-	a.RegisterRoutes(userHandler, authHandler, authMiddleware)
+	eventHandler := event.NewHandler(
+		eventService,
+		a.logger.With(slog.String("module", "event")),
+	)
+
+	a.RegisterRoutes(userHandler, authHandler, authMiddleware, eventHandler)
 
 	a.logger.Info(fmt.Sprintf("Server is running on port %s", a.config.AppPort))
 

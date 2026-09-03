@@ -21,6 +21,10 @@ func userIDFromContext(ctx context.Context) (string, bool) {
 	return userID, true
 }
 
+func UserIDFromContext(ctx context.Context) (string, bool) {
+	return userIDFromContext(ctx)
+}
+
 func withUserID(r *http.Request, userID string) *http.Request {
 	ctx := context.WithValue(r.Context(), userIDContextKey, userID)
 	return r.WithContext(ctx)

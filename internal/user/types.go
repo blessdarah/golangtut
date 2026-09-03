@@ -2,6 +2,7 @@ package user
 
 import (
 	"blessdarah/tuts/internal/lib"
+	"blessdarah/tuts/internal/model"
 
 	v "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
@@ -50,8 +51,8 @@ type UserResponse struct {
 	Email string `json:"email"`
 }
 
-func (u *CreateUserRequest) ToUser() User {
-	return User{
+func (u *CreateUserRequest) ToUser() model.User {
+	return model.User{
 		Name:     u.Name,
 		Email:    u.Email,
 		Password: u.Password,

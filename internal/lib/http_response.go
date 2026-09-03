@@ -26,8 +26,21 @@ type ProblemDetails struct {
 	Errors    map[string]string `json:"errors,omitempty"`
 }
 
+func ReadJSON(w http.ResponseWriter, r *http.Request, payload any) {
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		WriteProblem(w, r, ProblemDetails{
+			Title:    "failed to read event",
+			Status:   http.StatusBadRequest,
+			Detail:   "invalid request body",
+			Instance: r.URL.Path,
+		})
+		return
+	}
+}
+
 func WriteJSON(w http.ResponseWriter, r *http.Request, status int, payload any) {
-	body, err := json.Marshal(payload)
+	body, err := json.Marshal(&payload)
 	if err != nil {
 		WriteProblem(w, r, ProblemDetails{
 			Type:   ProblemTypeInternalError,
@@ -41,6 +54,7 @@ func WriteJSON(w http.ResponseWriter, r *http.Request, status int, payload any) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_, _ = w.Write(body)
+	return
 }
 
 func WriteProblem(w http.ResponseWriter, r *http.Request, problem ProblemDetails) {

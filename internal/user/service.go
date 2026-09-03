@@ -1,11 +1,13 @@
 package user
 
+import "blessdarah/tuts/internal/model"
+
 type userRepository interface {
-	List() []User
-	Create(user User) (*string, error)
-	FindByEmail(email string) (User, error)
-	FindById(id string) (User, error)
-	Update(user User) error
+	List() []model.User
+	Create(user model.User) (*string, error)
+	FindByEmail(email string) (model.User, error)
+	FindById(id string) (model.User, error)
+	Update(user model.User) error
 	Delete(id string) error
 }
 
@@ -22,31 +24,31 @@ func NewService(repo userRepository) *Service {
 
 // GetAll returns all users
 // by delegating to the repository
-func (a *Service) GetAll() []User {
+func (a *Service) GetAll() []model.User {
 	return a.repo.List()
 }
 
 // Create creates a new user
 // by delegating to the repository
-func (a *Service) AddUser(user User) (*string, error) {
+func (a *Service) AddUser(user model.User) (*string, error) {
 	return a.repo.Create(user)
 }
 
 // GetByEmail finds a user by email
 // by delegating to the repository
-func (a *Service) GetByEmail(email string) (User, error) {
+func (a *Service) GetByEmail(email string) (model.User, error) {
 	return a.repo.FindByEmail(email)
 }
 
 // GetByID finds a user by id
 // by delegating to the repository
-func (a *Service) GetByID(id string) (User, error) {
+func (a *Service) GetByID(id string) (model.User, error) {
 	return a.repo.FindById(id)
 }
 
 // UpdateUser updates a user
 // by delegating to the repository
-func (a *Service) UpdateUser(user User) error {
+func (a *Service) UpdateUser(user model.User) error {
 	return a.repo.Update(user)
 }
 

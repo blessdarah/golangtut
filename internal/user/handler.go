@@ -3,6 +3,7 @@ package user
 import (
 	"blessdarah/tuts/internal/config"
 	"blessdarah/tuts/internal/lib"
+	"blessdarah/tuts/internal/model"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -11,9 +12,9 @@ import (
 )
 
 type userService interface {
-	GetAll() []User
-	AddUser(user User) (*string, error)
-	GetByEmail(email string) (User, error)
+	GetAll() []model.User
+	AddUser(user model.User) (*string, error)
+	GetByEmail(email string) (model.User, error)
 }
 
 type Handler struct {
