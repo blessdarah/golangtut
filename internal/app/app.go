@@ -47,19 +47,21 @@ func NewApp(cfg *config.AppEnv) (*App, error) {
 func (a *App) RegisterRoutes(
 	userHandler *user.Handler,
 	authHandler *auth.Handler,
+	authMiddleware func(http.Handler) http.Handler,
 ) {
-	a.router.Route("/users", func(r chi.Router) {
-		r.Get("/", userHandler.GetUsers)
-	})
 
+	// auth routes
 	a.router.Route("/auth", func(r chi.Router) {
 		r.Post("/signup", authHandler.Signup)
-		r.Get("/me", authHandler.Me)
+		r.Post("/login", authHandler.Token) // login
 	})
 
-	a.router.Route("/oauth", func(r chi.Router) {
-		r.Post("/token", authHandler.Token)
+	a.router.Group(func(r chi.Router) {
+		r.Use(authMiddleware)
+		r.Get("/auth/me", authHandler.Me)
+		r.Get("/users", userHandler.GetUsers)
 	})
+
 }
 
 func (a *App) Run() {
@@ -82,8 +84,12 @@ func (a *App) Run() {
 		oauthServer,
 		a.logger.With(slog.String("module", "auth")),
 	)
+	authMiddleware := auth.RequireBearer(
+		oauthServer,
+		a.logger.With(slog.String("module", "auth-middleware")),
+	)
 
-	a.RegisterRoutes(userHandler, authHandler)
+	a.RegisterRoutes(userHandler, authHandler, authMiddleware)
 
 	a.logger.Info(fmt.Sprintf("Server is running on port %s", a.config.AppPort))
 

@@ -129,7 +129,7 @@ func TestTokenFailure(t *testing.T) {
 }
 
 func TestMeUnauthorized(t *testing.T) {
-	h := newTestHandler(&mockAuthService{}, &mockOAuthServer{validErr: errors.New("invalid")})
+	h := newTestHandler(&mockAuthService{}, &mockOAuthServer{})
 	res := doRequest(t, http.MethodGet, "/auth/me", nil, h.Me)
 
 	if res.Code != http.StatusUnauthorized {
@@ -140,7 +140,15 @@ func TestMeUnauthorized(t *testing.T) {
 func TestMeSuccess(t *testing.T) {
 	id := "user-1"
 	h := newTestHandler(&mockAuthService{getByIDUser: user.User{ID: &id, Name: "Ada", Email: "ada@example.com"}}, &mockOAuthServer{userID: id})
-	res := doRequest(t, http.MethodGet, "/auth/me", nil, h.Me)
+
+	r := chi.NewRouter()
+	r.Use(middleware.RequestID)
+	r.Use(RequireBearer(&mockOAuthServer{userID: id}, nil))
+	r.Get("/auth/me", h.Me)
+
+	req := httptest.NewRequest(http.MethodGet, "/auth/me", nil)
+	res := httptest.NewRecorder()
+	r.ServeHTTP(res, req)
 
 	if res.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", res.Code)
@@ -152,5 +160,75 @@ func TestMeSuccess(t *testing.T) {
 	}
 	if _, ok := got["password"]; ok {
 		t.Fatalf("password must not be present")
+	}
+}
+
+func TestRequireBearerBlocksInvalidToken(t *testing.T) {
+	mw := RequireBearer(&mockOAuthServer{validErr: errors.New("bad token")}, nil)
+
+	called := false
+	h := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/auth/me", nil)
+	res := httptest.NewRecorder()
+	h.ServeHTTP(res, req)
+
+	if called {
+		t.Fatalf("handler should not be called for invalid token")
+	}
+	if res.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", res.Code)
+	}
+}
+
+func TestRequireBearerPassesUserContext(t *testing.T) {
+	const id = "user-123"
+	mw := RequireBearer(&mockOAuthServer{userID: id}, nil)
+
+	h := mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotID, ok := userIDFromContext(r.Context())
+		if !ok || gotID != id {
+			t.Fatalf("expected user id in context")
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/auth/me", nil)
+	res := httptest.NewRecorder()
+	h.ServeHTTP(res, req)
+
+	if res.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", res.Code)
+	}
+}
+
+func TestAuthRouteGroupPublicVsProtected(t *testing.T) {
+	id := "user-1"
+	h := newTestHandler(&mockAuthService{signupID: &id, getByIDUser: user.User{ID: &id, Name: "Ada", Email: "ada@example.com"}}, &mockOAuthServer{userID: id})
+
+	r := chi.NewRouter()
+	r.Route("/auth", func(rr chi.Router) {
+		rr.Post("/signup", h.Signup)
+		rr.Group(func(gr chi.Router) {
+			gr.Use(RequireBearer(&mockOAuthServer{validErr: errors.New("missing token")}, nil))
+			gr.Get("/me", h.Me)
+		})
+	})
+
+	signupReq := httptest.NewRequest(http.MethodPost, "/auth/signup", bytes.NewReader([]byte(`{"name":"Ada","email":"ada@example.com","password":"Password1"}`)))
+	signupRes := httptest.NewRecorder()
+	r.ServeHTTP(signupRes, signupReq)
+	if signupRes.Code != http.StatusCreated {
+		t.Fatalf("expected signup 201, got %d", signupRes.Code)
+	}
+
+	meReq := httptest.NewRequest(http.MethodGet, "/auth/me", nil)
+	meRes := httptest.NewRecorder()
+	r.ServeHTTP(meRes, meReq)
+	if meRes.Code != http.StatusUnauthorized {
+		t.Fatalf("expected protected route 401 without token, got %d", meRes.Code)
 	}
 }

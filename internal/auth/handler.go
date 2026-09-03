@@ -99,9 +99,9 @@ func (h *Handler) Token(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
-	userID, err := h.oauth.ValidateBearerToken(r)
-	if err != nil {
-		h.logger.Error("validate bearer token", "error", err)
+	userID, ok := userIDFromContext(r.Context())
+	if !ok {
+		h.logger.Error("missing auth context user")
 		lib.WriteProblem(w, r, lib.ProblemDetails{
 			Type:   lib.ProblemTypeValidationError,
 			Title:  "Unauthorized",

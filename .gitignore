@@ -1,0 +1,9 @@
+.env
+tmp/build-errors.log
+tmp/main
+.git
+.opencode
+openspec
+tmp
+.claude/
+.codex/
