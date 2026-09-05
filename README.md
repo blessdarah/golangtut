@@ -88,3 +88,38 @@ grant_type=password&username=ada@example.com&password=Password1&client_id=<OAUTH
 ```text
 Authorization: Bearer <access_token>
 ```
+
+## Database Schema Workflow (Struct-First)
+
+Schema ownership is split:
+
+- `internal/db/persistence`: canonical persistence schema structs (declarative only, no business hooks)
+- `internal/model`: domain models used by handlers/services
+- `internal/db/migrations`: reviewed SQL migrations applied in runtime/deploy
+
+Production schema updates use SQL migrations only. Runtime AutoMigrate is not used.
+
+### Atlas in Docker Compose
+
+Atlas is available as a pinned Docker service in `deploy/docker-compose.yml`.
+
+Useful commands:
+
+- `make atlas-version`
+- `make atlas-schema`
+- `make atlas-diff name=<migration_name>`
+- `make check-schema-drift`
+
+`make atlas-diff` keeps the existing numeric migration naming convention by creating a sequential migration first and writing Atlas diff SQL into the generated `.up.sql` file.
+
+### gorm/gen typed query generation
+
+- Generator entrypoint: `cmd/querygen/main.go`
+- Generated output: `internal/db/query`
+
+Run and verify:
+
+- `make gen-query`
+- `make verify-gen-query`
+
+`make verify-gen-query` is intended for CI to enforce deterministic generated output.

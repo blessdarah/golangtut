@@ -1,7 +1,9 @@
 package user
 
 import (
-	"blessdarah/tuts/internal/model"
+	"blessdarah/tuts/internal/db/persistence"
+	"blessdarah/tuts/internal/db/query"
+	"context"
 	"errors"
 	"fmt"
 
@@ -28,63 +30,79 @@ func NewRepository(db *gorm.DB) *Repository {
 }
 
 // list returns all users
-func (r *Repository) List() []model.User {
-	var users []model.User
-	r.db.Find(&users)
+func (r *Repository) List() []persistence.User {
+	q := query.Use(r.db)
+	rows, err := q.WithContext(context.Background()).User.Find()
+	if err != nil {
+		return []persistence.User{}
+	}
+
+	users := make([]persistence.User, len(rows))
+	for i, row := range rows {
+		users[i] = *row
+	}
 
 	return users
 }
 
 // Create create a new user record
 // @returns error if any
-func (r *Repository) Create(user model.User) (*string, error) {
-	return user.ID, r.db.Create(&user).Error
+func (r *Repository) Create(user persistence.User) (*persistence.User, error) {
+	q := query.Use(r.db)
+	if err := q.WithContext(context.Background()).User.Create(&user); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }
 
 // FindByEmail finds a user by email
 // @returns user if found, error otherwise
-func (r *Repository) FindByEmail(email string) (model.User, error) {
-	var user model.User
-	err := r.db.Where("email = ?", email).First(&user).Error
+func (r *Repository) FindByEmail(email string) (persistence.User, error) {
+	q := query.Use(r.db)
+	user, err := q.WithContext(context.Background()).User.Where(q.User.Email.Eq(email)).First()
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return model.User{}, fmt.Errorf("%w: %v", ErrUserNotFound, err)
+		return persistence.User{}, fmt.Errorf("%w: %v", ErrUserNotFound, err)
 	}
 
 	if err != nil {
-		return model.User{}, fmt.Errorf("%w: %v", ErrInternal, err)
+		return persistence.User{}, fmt.Errorf("%w: %v", ErrInternal, err)
 	}
 
-	return user, nil
+	return *user, nil
 }
 
 // FindById finds a user by id (uuid)
 // @returns user if found, error otherwise
-func (r *Repository) FindById(id string) (model.User, error) {
-	var user model.User
-	err := r.db.Where("id = ?", id).First(&user).Error
+func (r *Repository) FindById(id string) (persistence.User, error) {
+	q := query.Use(r.db)
+	user, err := q.WithContext(context.Background()).User.Where(q.User.ID.Eq(id)).First()
 
 	// if user is not found
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return model.User{}, fmt.Errorf("%w: %v", ErrUserNotFound, err)
+		return persistence.User{}, fmt.Errorf("%w: %v", ErrUserNotFound, err)
 	}
 
 	if err != nil {
-		return model.User{}, fmt.Errorf("%w: %v", ErrInternal, err)
+		return persistence.User{}, fmt.Errorf("%w: %v", ErrInternal, err)
 	}
 
-	return user, nil
+	return *user, nil
 }
 
 // Update updates a user record
 // @returns error if any
-func (r *Repository) Update(user model.User) error {
-	return r.db.Save(&user).Error
+func (r *Repository) Update(user persistence.User) error {
+	q := query.Use(r.db)
+	return q.WithContext(context.Background()).User.Save(&user)
 }
 
 // Delete deletes a user record
 // @returns error if any
 func (r *Repository) Delete(id string) error {
-	return r.db.Delete(&model.User{}, id).Error
+	q := query.Use(r.db)
+	_, err := q.WithContext(context.Background()).User.Where(q.User.ID.Eq(id)).Delete()
+	return err
 }

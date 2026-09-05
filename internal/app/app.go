@@ -77,7 +77,7 @@ func (a *App) Run() {
 	userHandler := user.NewHandler(a.config, userSvc)
 	eventRepo := event.NewRepository(a.db)
 
-	authService := auth.NewService(userRepo)
+	authService := auth.NewService(userSvc)
 	oauthServer, err := auth.NewOAuthServer(
 		a.config.OAuthClientID,
 		a.config.OAuthClientSecret,
