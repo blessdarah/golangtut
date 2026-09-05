@@ -11,12 +11,15 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type ticketService interface {
 	GetAll(ctx context.Context) ([]model.Ticket, error)
 	Create(ctx context.Context, ticket model.Ticket) (*model.Ticket, error)
-	// GetByID(ctx context.Context, id string) (*model.Ticket, error)
+	GetByID(ctx context.Context, id string) (*model.Ticket, error)
 	// Update(ctx context.Context, ticket model.Ticket) error
 	// Delete(ctx context.Context, id string) error
 }
@@ -140,4 +143,57 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lib.WriteJSON(w, r, http.StatusCreated, ticket)
+}
+
+// GetTicket retrieves a ticket by id
+func (h *Handler) GetTicket(w http.ResponseWriter, r *http.Request) {
+	_, ok := auth.UserIDFromContext(r.Context())
+
+	if !ok {
+		h.logger.Error("unathorizied", "error", "no user id in context")
+		lib.WriteProblem(w, r, lib.ProblemDetails{
+			Type:   lib.ProblemTypeInternalError,
+			Title:  "Internal Server Error",
+			Status: http.StatusInternalServerError,
+			Detail: "unathorized",
+		})
+		return
+	}
+
+	id := chi.URLParam(r, "id")
+	parsedID, err := uuid.Parse(id)
+	if err != nil {
+		h.logger.Error("parse ticket id", "error", err)
+		lib.WriteProblem(w, r, lib.ProblemDetails{
+			Type:   lib.ProblemTypeValidationError,
+			Title:  "Bad Request",
+			Status: http.StatusBadRequest,
+			Detail: "invalid ticket id, exepected a uuid",
+		})
+		return
+	}
+
+	ticket, err := h.svc.GetByID(r.Context(), parsedID.String())
+	if err != nil {
+		h.logger.Error("get ticket", "error", err)
+		if errors.Is(err, ErrTicketNotFound) {
+			lib.WriteProblem(w, r, lib.ProblemDetails{
+				Type:   lib.ProblemTypeNotFound,
+				Title:  "Ticket Not Found",
+				Status: http.StatusNotFound,
+				Detail: fmt.Sprintf("ticket with id %s not found", id),
+			})
+			return
+		}
+
+		lib.WriteProblem(w, r, lib.ProblemDetails{
+			Type:   lib.ProblemTypeInternalError,
+			Title:  "Internal Server Error",
+			Status: http.StatusInternalServerError,
+			Detail: "failed to get ticket",
+		})
+		return
+	}
+
+	lib.WriteJSON(w, r, http.StatusOK, ticket)
 }

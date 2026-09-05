@@ -53,6 +53,17 @@ func (s *Service) Create(ctx context.Context, ticket model.Ticket) (*model.Ticke
 	return &modelTicket, nil
 }
 
+// GetByID returns a ticket by id
+func (s *Service) GetByID(ctx context.Context, id string) (*model.Ticket, error) {
+	t, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	modelTicket := toDomainTicket(*t)
+	return &modelTicket, nil
+}
+
 func toDomainTicket(t persistence.Ticket) model.Ticket {
 
 	return model.Ticket{

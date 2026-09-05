@@ -23,7 +23,7 @@ func (User) TableName() string {
 type Event struct {
 	ID          string         `gorm:"column:id;type:text;primaryKey"`
 	UserID      string         `gorm:"column:user_id;type:text;not null;index:events_user_id_idx"`
-	User        User           `gorm:"foreignKey:UserID;references:ID"`
+	User        User           `gorm:"foreignKey:UserID;references:ID;association_autosave:false"`
 	Name        string         `gorm:"column:name;type:text;not null"`
 	Description *string        `gorm:"column:description;type:text"`
 	Venue       string         `gorm:"column:venue;type:text;not null"`
@@ -32,19 +32,21 @@ type Event struct {
 	CreatedAt   time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at;not null"`
 	DeletedAt   gorm.DeletedAt `gorm:"column:deleted_at"`
-	Payments    []Payment      `gorm:"foreignKey:EventID;references:ID"`
+	Payments    []Payment      `gorm:"foreignKey:EventID;references:ID;association_autosave:false"`
 }
 
 func (Event) TableName() string {
 	return "events"
 }
 
+// Key assumption is that base currency is USD
+// But payments will be converted to XFA based on the current exchange rate
 type Ticket struct {
-	ID          string         `gorm:"column:ticket_id;type:text;primaryKey"`
+	ID          string         `gorm:"column:id;type:text;primaryKey"`
 	Type        string         `gorm:"column:type;type:varchar(30);not null"`
 	Price       float64        `gorm:"column:price;type:float;not null"`
 	EventID     string         `gorm:"column:event_id;type:text;not null;index:tickets_event_id_idx"`
-	Event       Event          `gorm:"foreignKey:EventID;references:ID"`
+	Event       Event          `gorm:"foreignKey:EventID;references:ID;association_autosave:false"`
 	Description *string        `gorm:"column:description;type:text"`
 	CreatedAt   time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at;not null"`
@@ -54,9 +56,9 @@ type Ticket struct {
 type Payment struct {
 	ID        string         `gorm:"column:id;type:text;primaryKey"`
 	EventID   string         `gorm:"column:event_id;type:text;not null;index:payments_event_id_idx"`
-	Event     Event          `gorm:"foreignKey:EventID;references:ID"`
+	Event     Event          `gorm:"foreignKey:EventID;references:ID;association_autosave:false"`
 	TicketID  string         `gorm:"column:ticket_id;type:text;not null;index:payments_ticket_id_idx"`
-	Ticket    Ticket         `gorm:"foreignKey:TicketID;references:ID"`
+	Ticket    Ticket         `gorm:"foreignKey:TicketID;references:ID;association_autosave:false"`
 	Amount    float64        `gorm:"column:amount;type:float;not null"`
 	Quantity  int            `gorm:"column:quantity;type:integer;not null"`
 	Total     float64        `gorm:"column:total;type:float;not null"`

@@ -4,10 +4,13 @@ import (
 	"blessdarah/tuts/internal/db/persistence"
 	"blessdarah/tuts/internal/db/query"
 	"context"
+	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
 )
+
+var ErrTicketNotFound = errors.New("ticket not found")
 
 type Repository struct {
 	db *gorm.DB
@@ -48,6 +51,9 @@ func (r *Repository) GetByID(ctx context.Context, id string) (*persistence.Ticke
 	q := query.Use(r.db)
 	ticket, err := q.WithContext(ctx).Ticket.Where(q.Ticket.ID.Eq(id)).First()
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("repo: %w, with id: %s", ErrTicketNotFound, id)
+		}
 		return nil, fmt.Errorf("repo: get ticket %w", err)
 	}
 

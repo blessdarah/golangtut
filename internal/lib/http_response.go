@@ -51,7 +51,6 @@ func WriteJSON(w http.ResponseWriter, r *http.Request, status int, payload any) 
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_, _ = w.Write(body)
 	return

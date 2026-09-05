@@ -25,6 +25,7 @@ type AppEnv struct {
 	OAuthClientSecret          string
 	OAuthAccessTokenTTLMinutes int
 	OAuthRefreshTokenTTLHours  int
+	EXCHANGE_RATE_BASE_URL     string
 }
 
 func panicIfErr(val string) string {
@@ -77,6 +78,7 @@ func LoadConfig() *AppEnv {
 		OAuthClientSecret:          panicIfErr("OAUTH_CLIENT_SECRET"),
 		OAuthAccessTokenTTLMinutes: envIntOrDefault("OAUTH_ACCESS_TOKEN_TTL_MINUTES", 120),
 		OAuthRefreshTokenTTLHours:  envIntOrDefault("OAUTH_REFRESH_TOKEN_TTL_HOURS", 24),
+		EXCHANGE_RATE_BASE_URL:     panicIfErr("EXCHANGE_RATE_BASE_URL"),
 
 		PageSize: panicIfErrInt("PAGE_SIZE"),
 		Debug:    panicIfErr("DEBUG") == "true",
