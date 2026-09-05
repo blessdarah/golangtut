@@ -64,8 +64,8 @@ func (res *CreateRequest) ToEvent() (model.Event, error) {
 	return model.Event{
 		Name:        res.Name,
 		Venue:       res.Venue,
-		StartDate:   startDate,
-		EndDate:     endDate,
+		StartDate:   &startDate,
+		EndDate:     &endDate,
 		Description: res.Description,
 	}, nil
 }

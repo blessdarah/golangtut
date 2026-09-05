@@ -5,10 +5,13 @@ import (
 	"blessdarah/tuts/internal/db/persistence"
 	"blessdarah/tuts/internal/db/query"
 	"context"
+	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
 )
+
+var ErrEventNotFound = errors.New("event not found")
 
 type Repository struct {
 	db *gorm.DB
@@ -59,6 +62,9 @@ func (r *Repository) Get(ctx context.Context, id string) (*persistence.Event, er
 	q := query.Use(r.db)
 	event, err := q.WithContext(ctx).Event.Where(q.Event.ID.Eq(id)).First()
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("repo: %w, with id: %s", ErrEventNotFound, id)
+		}
 		return nil, fmt.Errorf("repo: get event %w", err)
 	}
 

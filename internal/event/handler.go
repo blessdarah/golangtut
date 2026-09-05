@@ -169,14 +169,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 func ToResponse(e *model.Event) Response {
 	return Response{
-		ID:          e.ID,
+		ID:          *e.ID,
 		UserID:      *e.UserID,
 		Name:        e.Name,
 		Venue:       e.Venue,
-		StartDate:   e.StartDate,
-		EndDate:     e.EndDate,
+		StartDate:   *e.StartDate,
+		EndDate:     *e.EndDate,
 		Description: e.Description,
-		CreatedAt:   e.CreatedAt,
-		UpdatedAt:   e.UpdatedAt,
+		CreatedAt:   *e.CreatedAt,
+		UpdatedAt:   *e.UpdatedAt,
 	}
 }

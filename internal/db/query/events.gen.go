@@ -37,6 +37,46 @@ func newEvent(db *gorm.DB, opts ...gen.DOOption) event {
 	_event.CreatedAt = field.NewTime(tableName, "created_at")
 	_event.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_event.DeletedAt = field.NewField(tableName, "deleted_at")
+	_event.Payments = eventHasManyPayments{
+		db: db.Session(&gorm.Session{}),
+
+		RelationField: field.NewRelation("Payments", "persistence.Payment"),
+		Event: struct {
+			field.RelationField
+			User struct {
+				field.RelationField
+			}
+			Payments struct {
+				field.RelationField
+			}
+		}{
+			RelationField: field.NewRelation("Payments.Event", "persistence.Event"),
+			User: struct {
+				field.RelationField
+			}{
+				RelationField: field.NewRelation("Payments.Event.User", "persistence.User"),
+			},
+			Payments: struct {
+				field.RelationField
+			}{
+				RelationField: field.NewRelation("Payments.Event.Payments", "persistence.Payment"),
+			},
+		},
+		Ticket: struct {
+			field.RelationField
+			Event struct {
+				field.RelationField
+			}
+		}{
+			RelationField: field.NewRelation("Payments.Ticket", "persistence.Ticket"),
+			Event: struct {
+				field.RelationField
+			}{
+				RelationField: field.NewRelation("Payments.Ticket.Event", "persistence.Event"),
+			},
+		},
+	}
+
 	_event.User = eventBelongsToUser{
 		db: db.Session(&gorm.Session{}),
 
@@ -62,7 +102,9 @@ type event struct {
 	CreatedAt   field.Time
 	UpdatedAt   field.Time
 	DeletedAt   field.Field
-	User        eventBelongsToUser
+	Payments    eventHasManyPayments
+
+	User eventBelongsToUser
 
 	fieldMap map[string]field.Expr
 }
@@ -113,7 +155,7 @@ func (e *event) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (e *event) fillFieldMap() {
-	e.fieldMap = make(map[string]field.Expr, 11)
+	e.fieldMap = make(map[string]field.Expr, 12)
 	e.fieldMap["id"] = e.ID
 	e.fieldMap["user_id"] = e.UserID
 	e.fieldMap["name"] = e.Name
@@ -135,6 +177,93 @@ func (e event) clone(db *gorm.DB) event {
 func (e event) replaceDB(db *gorm.DB) event {
 	e.eventDo.ReplaceDB(db)
 	return e
+}
+
+type eventHasManyPayments struct {
+	db *gorm.DB
+
+	field.RelationField
+
+	Event struct {
+		field.RelationField
+		User struct {
+			field.RelationField
+		}
+		Payments struct {
+			field.RelationField
+		}
+	}
+	Ticket struct {
+		field.RelationField
+		Event struct {
+			field.RelationField
+		}
+	}
+}
+
+func (a eventHasManyPayments) Where(conds ...field.Expr) *eventHasManyPayments {
+	if len(conds) == 0 {
+		return &a
+	}
+
+	exprs := make([]clause.Expression, 0, len(conds))
+	for _, cond := range conds {
+		exprs = append(exprs, cond.BeCond().(clause.Expression))
+	}
+	a.db = a.db.Clauses(clause.Where{Exprs: exprs})
+	return &a
+}
+
+func (a eventHasManyPayments) WithContext(ctx context.Context) *eventHasManyPayments {
+	a.db = a.db.WithContext(ctx)
+	return &a
+}
+
+func (a eventHasManyPayments) Session(session *gorm.Session) *eventHasManyPayments {
+	a.db = a.db.Session(session)
+	return &a
+}
+
+func (a eventHasManyPayments) Model(m *persistence.Event) *eventHasManyPaymentsTx {
+	return &eventHasManyPaymentsTx{a.db.Model(m).Association(a.Name())}
+}
+
+type eventHasManyPaymentsTx struct{ tx *gorm.Association }
+
+func (a eventHasManyPaymentsTx) Find() (result []*persistence.Payment, err error) {
+	return result, a.tx.Find(&result)
+}
+
+func (a eventHasManyPaymentsTx) Append(values ...*persistence.Payment) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Append(targetValues...)
+}
+
+func (a eventHasManyPaymentsTx) Replace(values ...*persistence.Payment) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Replace(targetValues...)
+}
+
+func (a eventHasManyPaymentsTx) Delete(values ...*persistence.Payment) (err error) {
+	targetValues := make([]interface{}, len(values))
+	for i, v := range values {
+		targetValues[i] = v
+	}
+	return a.tx.Delete(targetValues...)
+}
+
+func (a eventHasManyPaymentsTx) Clear() error {
+	return a.tx.Clear()
+}
+
+func (a eventHasManyPaymentsTx) Count() int64 {
+	return a.tx.Count()
 }
 
 type eventBelongsToUser struct {

@@ -5,6 +5,7 @@ import (
 	"blessdarah/tuts/internal/lib"
 	"blessdarah/tuts/internal/model"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -107,29 +108,37 @@ func (a *Service) DeleteUser(id string) error {
 }
 
 func toDomainUser(u persistence.User) model.User {
-	id := u.ID
 	return model.User{
-		ID:        &id,
+		ID:        &u.ID,
 		Name:      u.Name,
 		Email:     u.Email,
 		Password:  u.Password,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		CreatedAt: &u.CreatedAt,
+		UpdatedAt: &u.UpdatedAt,
 	}
 }
 
 func toPersistenceUser(u model.User) persistence.User {
-	id := ""
-	if u.ID != nil {
-		id = *u.ID
+	if u.ID == nil {
+		id := uuid.NewString()
+		u.ID = &id
 	}
 
+	now := time.Now()
+
+	if u.CreatedAt == nil {
+		u.CreatedAt = &now
+	}
+
+	if u.UpdatedAt == nil {
+		u.UpdatedAt = &now
+	}
 	return persistence.User{
-		ID:        id,
+		ID:        *u.ID,
 		Name:      u.Name,
 		Email:     u.Email,
 		Password:  u.Password,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		CreatedAt: *u.CreatedAt,
+		UpdatedAt: *u.UpdatedAt,
 	}
 }

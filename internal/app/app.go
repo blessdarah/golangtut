@@ -4,6 +4,7 @@ import (
 	"blessdarah/tuts/internal/auth"
 	"blessdarah/tuts/internal/config"
 	"blessdarah/tuts/internal/event"
+	"blessdarah/tuts/internal/ticket"
 	"blessdarah/tuts/internal/user"
 	"fmt"
 	"log"
@@ -50,6 +51,7 @@ func (a *App) RegisterRoutes(
 	authHandler *auth.Handler,
 	authMiddleware func(http.Handler) http.Handler,
 	eventHandler *event.Handler,
+	ticketHandler *ticket.Handler,
 ) {
 
 	// auth routes
@@ -58,6 +60,7 @@ func (a *App) RegisterRoutes(
 
 	a.router.Get("/events/me", eventHandler.GetByUserID)
 	a.router.Get("/events", eventHandler.GetAll)
+	a.router.Get("/tickets", ticketHandler.GetTickets)
 
 	a.router.Group(func(r chi.Router) {
 		r.Use(authMiddleware)
@@ -67,16 +70,22 @@ func (a *App) RegisterRoutes(
 		// event routes
 		r.Post("/events", eventHandler.Create)
 
+		// ticket routes
+		r.Post("/tickets", ticketHandler.Create)
+
 	})
 
 }
 
 func (a *App) Run() {
+	// ----------- respositories -----------
 	userRepo := user.NewRepository(a.db)
 	userSvc := user.NewService(userRepo)
 	userHandler := user.NewHandler(a.config, userSvc)
 	eventRepo := event.NewRepository(a.db)
+	ticketRepo := ticket.NewRepository(a.db)
 
+	// ----------- services -----------
 	authService := auth.NewService(userSvc)
 	oauthServer, err := auth.NewOAuthServer(
 		a.config.OAuthClientID,
@@ -90,7 +99,9 @@ func (a *App) Run() {
 	}
 
 	eventService := event.NewService(eventRepo)
+	ticketService := ticket.NewService(ticketRepo)
 
+	// ----------- handlers -----------
 	authHandler := auth.NewAuthHandler(
 		authService,
 		oauthServer,
@@ -105,8 +116,19 @@ func (a *App) Run() {
 		eventService,
 		a.logger.With(slog.String("module", "event")),
 	)
+	ticketHandler := ticket.NewHandler(
+		ticketService,
+		eventService,
+		a.logger.With(slog.String("module", "ticket")),
+	)
 
-	a.RegisterRoutes(userHandler, authHandler, authMiddleware, eventHandler)
+	a.RegisterRoutes(
+		userHandler,
+		authHandler,
+		authMiddleware,
+		eventHandler,
+		ticketHandler,
+	)
 
 	a.logger.Info(fmt.Sprintf("Server is running on port %s", a.config.AppPort))
 

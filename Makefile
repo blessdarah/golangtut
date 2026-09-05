@@ -36,6 +36,9 @@ clean-db:
 
 reset-db: clean-db migrate
 
+test:
+	@go test ./...
+
 gen-query:
 	@go run ./cmd/querygen
 
@@ -56,11 +59,23 @@ atlas-schema:
 
 atlas-diff:
 	@test -n "$(name)" || (echo "usage: make atlas-diff name=<migration_name>" && exit 1)
-	@$(MAKE) atlas-reset-dev-db
-	@migrate create -ext sql -dir internal/db/migrations -seq $(name)
-	@up_file=$$(ls -1 internal/db/migrations/*_$(name).up.sql | sort | tail -n 1); \
-	ATLAS_DB_URL='$(atlasDbUrl)' ATLAS_DEV_URL='$(atlasDevUrl)' docker-compose --env-file .env -f $(composeFile) run --rm atlas schema diff --env local --from "$(atlasDbUrl)" --to env://src --exclude "public.schema_migrations" --format '{{ sql . }}' > $$up_file; \
-	echo "wrote $$up_file"
+	@set -e; \
+	$(MAKE) atlas-reset-dev-db; \
+	diff_sql="$$(ATLAS_DB_URL='$(atlasDbUrl)' ATLAS_DEV_URL='$(atlasDevUrl)' docker-compose --env-file .env -f $(composeFile) run --rm atlas schema diff --env local --from "$(atlasDbUrl)" --to env://src --exclude "public.schema_migrations" --format '{{ sql . }}')"; \
+	if [ -z "$$diff_sql" ]; then \
+		echo "no schema changes detected; no migration files created"; \
+		exit 0; \
+	fi; \
+	reverse_sql="$$(ATLAS_DB_URL='$(atlasDbUrl)' ATLAS_DEV_URL='$(atlasDevUrl)' docker-compose --env-file .env -f $(composeFile) run --rm atlas schema diff --env local --from env://src --to "$(atlasDbUrl)" --exclude "public.schema_migrations" --format '{{ sql . }}')"; \
+	migrate create -ext sql -dir internal/db/migrations -seq $(name); \
+	up_file=$$(ls -1 internal/db/migrations/*_$(name).up.sql | sort | tail -n 1); \
+	down_file="$${up_file%.up.sql}.down.sql"; \
+	printf "%s\n" "$$diff_sql" > "$$up_file"; \
+	if [ -n "$$reverse_sql" ]; then \
+		printf "%s\n" "$$reverse_sql" > "$$down_file"; \
+	fi; \
+	echo "wrote $$up_file"; \
+	echo "wrote $$down_file"
 
 check-schema-drift:
 	@set -e; \
@@ -72,3 +87,5 @@ check-schema-drift:
 		exit 1; \
 	fi; \
 	echo "no schema drift detected"
+
+feature-verify: check-schema-drift verify-gen-query test

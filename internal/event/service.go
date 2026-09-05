@@ -4,6 +4,7 @@ import (
 	"blessdarah/tuts/internal/db/persistence"
 	"blessdarah/tuts/internal/model"
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -61,7 +62,7 @@ func (s *Service) GetByUserID(ctx context.Context) ([]*model.Event, error) {
 
 // Create creates a new event
 func (s *Service) Create(ctx context.Context, event model.Event) (*model.Event, error) {
-	row := toSchemaEvent(event)
+	row := toPersistenceEvent(event)
 	row.ID = uuid.NewString()
 
 	created, err := s.repo.Create(ctx, *row)
@@ -86,7 +87,7 @@ func (s *Service) Get(ctx context.Context, id string) (*model.Event, error) {
 
 // Update updates an event
 func (s *Service) Update(ctx context.Context, event model.Event) error {
-	row := toSchemaEvent(event)
+	row := toPersistenceEvent(event)
 	return s.repo.Update(ctx, *row)
 }
 
@@ -96,35 +97,44 @@ func (s *Service) Delete(ctx context.Context, id string) error {
 }
 
 func toDomainEvent(e *persistence.Event) model.Event {
-	userID := e.UserID
 	return model.Event{
-		ID:          e.ID,
-		UserID:      &userID,
+		ID:          &e.ID,
+		UserID:      &e.UserID,
 		Name:        e.Name,
 		Description: e.Description,
 		Venue:       e.Venue,
-		StartDate:   e.StartDate,
-		EndDate:     e.EndDate,
-		CreatedAt:   e.CreatedAt,
-		UpdatedAt:   e.UpdatedAt,
+		StartDate:   &e.StartDate,
+		EndDate:     &e.EndDate,
+		CreatedAt:   &e.CreatedAt,
+		UpdatedAt:   &e.UpdatedAt,
 	}
 }
 
-func toSchemaEvent(e model.Event) *persistence.Event {
-	userID := ""
-	if e.UserID != nil {
-		userID = *e.UserID
+func toPersistenceEvent(e model.Event) *persistence.Event {
+	if e.ID == nil {
+		id := uuid.NewString()
+		e.ID = &id
+	}
+
+	now := time.Now()
+
+	if e.CreatedAt == nil {
+		e.CreatedAt = &now
+	}
+
+	if e.UpdatedAt == nil {
+		e.UpdatedAt = &now
 	}
 
 	return &persistence.Event{
-		ID:          e.ID,
-		UserID:      userID,
+		ID:          *e.ID,
+		UserID:      *e.UserID,
 		Name:        e.Name,
 		Description: e.Description,
 		Venue:       e.Venue,
-		StartDate:   e.StartDate,
-		EndDate:     e.EndDate,
-		CreatedAt:   e.CreatedAt,
-		UpdatedAt:   e.UpdatedAt,
+		StartDate:   *e.StartDate,
+		EndDate:     *e.EndDate,
+		CreatedAt:   *e.CreatedAt,
+		UpdatedAt:   *e.UpdatedAt,
 	}
 }

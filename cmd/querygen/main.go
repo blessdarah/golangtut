@@ -15,6 +15,11 @@ func main() {
 		FieldWithTypeTag:  true,
 	})
 
-	g.ApplyBasic(persistence.User{}, persistence.Event{})
+	g.ApplyBasic(
+		persistence.User{},
+		persistence.Event{},
+		persistence.Ticket{},
+		persistence.Payment{},
+	)
 	g.Execute()
 }

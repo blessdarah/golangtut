@@ -16,39 +16,49 @@ import (
 )
 
 var (
-	Q     = new(Query)
-	Event *event
-	User  *user
+	Q       = new(Query)
+	Event   *event
+	Payment *payment
+	Ticket  *ticket
+	User    *user
 )
 
 func SetDefault(db *gorm.DB, opts ...gen.DOOption) {
 	*Q = *Use(db, opts...)
 	Event = &Q.Event
+	Payment = &Q.Payment
+	Ticket = &Q.Ticket
 	User = &Q.User
 }
 
 func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 	return &Query{
-		db:    db,
-		Event: newEvent(db, opts...),
-		User:  newUser(db, opts...),
+		db:      db,
+		Event:   newEvent(db, opts...),
+		Payment: newPayment(db, opts...),
+		Ticket:  newTicket(db, opts...),
+		User:    newUser(db, opts...),
 	}
 }
 
 type Query struct {
 	db *gorm.DB
 
-	Event event
-	User  user
+	Event   event
+	Payment payment
+	Ticket  ticket
+	User    user
 }
 
 func (q *Query) Available() bool { return q.db != nil }
 
 func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
-		db:    db,
-		Event: q.Event.clone(db),
-		User:  q.User.clone(db),
+		db:      db,
+		Event:   q.Event.clone(db),
+		Payment: q.Payment.clone(db),
+		Ticket:  q.Ticket.clone(db),
+		User:    q.User.clone(db),
 	}
 }
 
@@ -62,21 +72,27 @@ func (q *Query) WriteDB() *Query {
 
 func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 	return &Query{
-		db:    db,
-		Event: q.Event.replaceDB(db),
-		User:  q.User.replaceDB(db),
+		db:      db,
+		Event:   q.Event.replaceDB(db),
+		Payment: q.Payment.replaceDB(db),
+		Ticket:  q.Ticket.replaceDB(db),
+		User:    q.User.replaceDB(db),
 	}
 }
 
 type queryCtx struct {
-	Event IEventDo
-	User  IUserDo
+	Event   IEventDo
+	Payment IPaymentDo
+	Ticket  ITicketDo
+	User    IUserDo
 }
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
-		Event: q.Event.WithContext(ctx),
-		User:  q.User.WithContext(ctx),
+		Event:   q.Event.WithContext(ctx),
+		Payment: q.Payment.WithContext(ctx),
+		Ticket:  q.Ticket.WithContext(ctx),
+		User:    q.User.WithContext(ctx),
 	}
 }
 

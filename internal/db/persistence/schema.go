@@ -32,8 +32,36 @@ type Event struct {
 	CreatedAt   time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at;not null"`
 	DeletedAt   gorm.DeletedAt `gorm:"column:deleted_at"`
+	Payments    []Payment      `gorm:"foreignKey:EventID;references:ID"`
 }
 
 func (Event) TableName() string {
 	return "events"
+}
+
+type Ticket struct {
+	ID          string         `gorm:"column:ticket_id;type:text;primaryKey"`
+	Type        string         `gorm:"column:type;type:varchar(30);not null"`
+	Price       float64        `gorm:"column:price;type:float;not null"`
+	EventID     string         `gorm:"column:event_id;type:text;not null;index:tickets_event_id_idx"`
+	Event       Event          `gorm:"foreignKey:EventID;references:ID"`
+	Description *string        `gorm:"column:description;type:text"`
+	CreatedAt   time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt   time.Time      `gorm:"column:updated_at;not null"`
+	DeletedAt   gorm.DeletedAt `gorm:"column:deleted_at"`
+}
+
+type Payment struct {
+	ID        string         `gorm:"column:id;type:text;primaryKey"`
+	EventID   string         `gorm:"column:event_id;type:text;not null;index:payments_event_id_idx"`
+	Event     Event          `gorm:"foreignKey:EventID;references:ID"`
+	TicketID  string         `gorm:"column:ticket_id;type:text;not null;index:payments_ticket_id_idx"`
+	Ticket    Ticket         `gorm:"foreignKey:TicketID;references:ID"`
+	Amount    float64        `gorm:"column:amount;type:float;not null"`
+	Quantity  int            `gorm:"column:quantity;type:integer;not null"`
+	Total     float64        `gorm:"column:total;type:float;not null"`
+	Provider  string         `gorm:"column:payment_provider;type:varchar(30);not null"`
+	CreatedAt time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt time.Time      `gorm:"column:updated_at;not null"`
+	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at"`
 }
