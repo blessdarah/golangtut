@@ -36,13 +36,15 @@ type Ticket struct {
 }
 
 type Payment struct {
-	ID        *string    `json:"id"`
-	EventID   string     `json:"eventId"`
-	TicketID  string     `json:"ticketId"`
-	Amount    float64    `json:"amount"`
-	Quantity  int        `json:"quantity"`
-	Total     float64    `json:"total"`
-	Provider  string     `json:"provider"`
-	CreatedAt *time.Time `json:"createdAt"`
-	UpdatedAt *time.Time `json:"updatedAt"`
+	ID            *string    `json:"id"`
+	EventID       string     `json:"eventId"`
+	TicketID      string     `json:"ticketId"`
+	CustomerName  string     `json:"name"`
+	CustomerEmail string     `json:"email"`
+	Amount        float64    `json:"amount"`
+	Quantity      int        `json:"quantity"`
+	Total         float64    `json:"total"`
+	Provider      string     `json:"provider"`
+	CreatedAt     *time.Time `json:"createdAt"`
+	UpdatedAt     *time.Time `json:"updatedAt"`
 }

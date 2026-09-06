@@ -30,6 +30,8 @@ func newPayment(db *gorm.DB, opts ...gen.DOOption) payment {
 	_payment.ID = field.NewString(tableName, "id")
 	_payment.EventID = field.NewString(tableName, "event_id")
 	_payment.TicketID = field.NewString(tableName, "ticket_id")
+	_payment.CustomerName = field.NewString(tableName, "customer_name")
+	_payment.CustomerEmail = field.NewString(tableName, "customer_email")
 	_payment.Amount = field.NewFloat64(tableName, "amount")
 	_payment.Quantity = field.NewInt(tableName, "quantity")
 	_payment.Total = field.NewFloat64(tableName, "total")
@@ -94,18 +96,20 @@ func newPayment(db *gorm.DB, opts ...gen.DOOption) payment {
 type payment struct {
 	paymentDo paymentDo
 
-	ALL       field.Asterisk
-	ID        field.String
-	EventID   field.String
-	TicketID  field.String
-	Amount    field.Float64
-	Quantity  field.Int
-	Total     field.Float64
-	Provider  field.String
-	CreatedAt field.Time
-	UpdatedAt field.Time
-	DeletedAt field.Field
-	Event     paymentBelongsToEvent
+	ALL           field.Asterisk
+	ID            field.String
+	EventID       field.String
+	TicketID      field.String
+	CustomerName  field.String
+	CustomerEmail field.String
+	Amount        field.Float64
+	Quantity      field.Int
+	Total         field.Float64
+	Provider      field.String
+	CreatedAt     field.Time
+	UpdatedAt     field.Time
+	DeletedAt     field.Field
+	Event         paymentBelongsToEvent
 
 	Ticket paymentBelongsToTicket
 
@@ -127,6 +131,8 @@ func (p *payment) updateTableName(table string) *payment {
 	p.ID = field.NewString(table, "id")
 	p.EventID = field.NewString(table, "event_id")
 	p.TicketID = field.NewString(table, "ticket_id")
+	p.CustomerName = field.NewString(table, "customer_name")
+	p.CustomerEmail = field.NewString(table, "customer_email")
 	p.Amount = field.NewFloat64(table, "amount")
 	p.Quantity = field.NewInt(table, "quantity")
 	p.Total = field.NewFloat64(table, "total")
@@ -158,10 +164,12 @@ func (p *payment) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (p *payment) fillFieldMap() {
-	p.fieldMap = make(map[string]field.Expr, 12)
+	p.fieldMap = make(map[string]field.Expr, 14)
 	p.fieldMap["id"] = p.ID
 	p.fieldMap["event_id"] = p.EventID
 	p.fieldMap["ticket_id"] = p.TicketID
+	p.fieldMap["customer_name"] = p.CustomerName
+	p.fieldMap["customer_email"] = p.CustomerEmail
 	p.fieldMap["amount"] = p.Amount
 	p.fieldMap["quantity"] = p.Quantity
 	p.fieldMap["total"] = p.Total

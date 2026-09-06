@@ -54,16 +54,18 @@ type Ticket struct {
 }
 
 type Payment struct {
-	ID        string         `gorm:"column:id;type:text;primaryKey"`
-	EventID   string         `gorm:"column:event_id;type:text;not null;index:payments_event_id_idx"`
-	Event     Event          `gorm:"foreignKey:EventID;references:ID;association_autosave:false"`
-	TicketID  string         `gorm:"column:ticket_id;type:text;not null;index:payments_ticket_id_idx"`
-	Ticket    Ticket         `gorm:"foreignKey:TicketID;references:ID;association_autosave:false"`
-	Amount    float64        `gorm:"column:amount;type:float;not null"`
-	Quantity  int            `gorm:"column:quantity;type:integer;not null"`
-	Total     float64        `gorm:"column:total;type:float;not null"`
-	Provider  string         `gorm:"column:payment_provider;type:varchar(30);not null"`
-	CreatedAt time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP"`
-	UpdatedAt time.Time      `gorm:"column:updated_at;not null"`
-	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at"`
+	ID            string         `gorm:"column:id;type:text;primaryKey"`
+	EventID       string         `gorm:"column:event_id;type:text;not null;index:payments_event_id_idx"`
+	Event         Event          `gorm:"foreignKey:EventID;references:ID;association_autosave:false"`
+	TicketID      string         `gorm:"column:ticket_id;type:text;not null;index:payments_ticket_id_idx"`
+	Ticket        Ticket         `gorm:"foreignKey:TicketID;references:ID;association_autosave:false"`
+	CustomerName  string         `gorm:"column:customer_name;type:varchar(80);not null"`
+	CustomerEmail string         `gorm:"column:customer_email;type:varchar(255);not null"`
+	Amount        float64        `gorm:"column:amount;type:float;not null"`
+	Quantity      int            `gorm:"column:quantity;type:integer;not null"`
+	Total         float64        `gorm:"column:total;type:float;not null"`
+	Provider      string         `gorm:"column:payment_provider;type:varchar(30);not null"`
+	CreatedAt     time.Time      `gorm:"column:created_at;not null;default:CURRENT_TIMESTAMP"`
+	UpdatedAt     time.Time      `gorm:"column:updated_at;not null"`
+	DeletedAt     gorm.DeletedAt `gorm:"column:deleted_at"`
 }

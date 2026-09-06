@@ -4,8 +4,10 @@ import (
 	"blessdarah/tuts/internal/auth"
 	"blessdarah/tuts/internal/config"
 	"blessdarah/tuts/internal/event"
+	"blessdarah/tuts/internal/payment"
 	"blessdarah/tuts/internal/ticket"
 	"blessdarah/tuts/internal/user"
+	"blessdarah/tuts/pkg"
 	"fmt"
 	"log"
 	"log/slog"
@@ -52,6 +54,7 @@ func (a *App) RegisterRoutes(
 	authMiddleware func(http.Handler) http.Handler,
 	eventHandler *event.Handler,
 	ticketHandler *ticket.Handler,
+	paymentHandler *payment.Handler,
 ) {
 
 	// auth routes
@@ -61,6 +64,8 @@ func (a *App) RegisterRoutes(
 	a.router.Get("/events/me", eventHandler.GetByUserID)
 	a.router.Get("/events", eventHandler.GetAll)
 	a.router.Get("/tickets", ticketHandler.GetTickets)
+	a.router.Post("/events/{id}/{ticket_id}/pay", paymentHandler.Pay)
+	a.router.Get("/payments", paymentHandler.GetPayments)
 
 	a.router.Group(func(r chi.Router) {
 		r.Use(authMiddleware)
@@ -84,6 +89,7 @@ func (a *App) Run() {
 	userHandler := user.NewHandler(a.config, userSvc)
 	eventRepo := event.NewRepository(a.db)
 	ticketRepo := ticket.NewRepository(a.db)
+	paymentRepo := payment.NewRepository(a.db)
 
 	// ----------- services -----------
 	authService := auth.NewService(userSvc)
@@ -100,6 +106,11 @@ func (a *App) Run() {
 
 	eventService := event.NewService(eventRepo)
 	ticketService := ticket.NewService(ticketRepo)
+	paymentService := payment.NewService(paymentRepo, a.logger.With(slog.String("module", "payment:service")))
+	exrService := pkg.NewExchangeRateService(
+		a.config.EXCHANGE_RATE_BASE_URL,
+		a.logger.With(slog.String("module", "exr")),
+	)
 
 	// ----------- handlers -----------
 	authHandler := auth.NewAuthHandler(
@@ -121,6 +132,13 @@ func (a *App) Run() {
 		eventService,
 		a.logger.With(slog.String("module", "ticket")),
 	)
+	paymentHandler := payment.NewHandler(
+		paymentService,
+		a.logger.With(slog.String("module", "payment:handler")),
+		exrService,
+		eventService,
+		ticketService,
+	)
 
 	a.RegisterRoutes(
 		userHandler,
@@ -128,6 +146,7 @@ func (a *App) Run() {
 		authMiddleware,
 		eventHandler,
 		ticketHandler,
+		paymentHandler,
 	)
 
 	a.logger.Info(fmt.Sprintf("Server is running on port %s", a.config.AppPort))
