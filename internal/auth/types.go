@@ -12,7 +12,7 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func (u *LoginRequest) Validate() lib.HttpValidationError {
+func (u *LoginRequest) Validate() error {
 	errs := v.ValidateStruct(u,
 		v.Field(&u.Email, v.Required, is.Email),
 		v.Field(&u.Password, v.Required, v.Length(8, 0), is.Alphanumeric),

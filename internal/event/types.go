@@ -18,7 +18,7 @@ type CreateRequest struct {
 	Description *string `json:"description"`
 }
 
-func (res *CreateRequest) Validate(ctx context.Context) lib.HttpValidationError {
+func (res *CreateRequest) Validate(ctx context.Context) error {
 	errs := validation.ValidateStructWithContext(ctx, res,
 		validation.Field(&res.Name, validation.Required, validation.Length(2, 0)),
 		validation.Field(&res.Venue, validation.Required, validation.Length(2, 0)),
@@ -78,7 +78,7 @@ type UpdateResponse struct {
 	Description *string `json:"description"`
 }
 
-func (res *UpdateResponse) Validate(ctx context.Context) lib.HttpValidationError {
+func (res *UpdateResponse) Validate(ctx context.Context) error {
 	errs := validation.ValidateStructWithContext(ctx, res,
 		validation.Field(&res.Name, validation.When(res.Name != nil, validation.Length(2, 0))),
 		validation.Field(&res.Venue, validation.When(res.Venue != nil, validation.Length(2, 0))),

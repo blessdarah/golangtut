@@ -7,13 +7,13 @@ import (
 )
 
 type CreateRequest struct {
-	Type        string  `json:"type"`
-	Price       float64 `json:"price"`
-	EventID     string  `json:"eventId"`
-	Description *string `json:"description"`
+	Type        string  `json:"type" fake:"{word}"`
+	Price       float64 `json:"price" fake:"{float64range:0.01,100.0}"`
+	EventID     string  `json:"eventId" fake:"{uuid}"`
+	Description *string `json:"description" fake:"{sentence}"`
 }
 
-func (r *CreateRequest) Validate() lib.HttpValidationError {
+func (r *CreateRequest) Validate() error {
 	errs := validation.ValidateStruct(r,
 		validation.Field(&r.Type, validation.Required, validation.Length(2, 0)),
 		validation.Field(&r.Price, validation.Required, validation.Min(0.0)),

@@ -43,16 +43,19 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := req.Validate(); len(err) > 0 {
+	if err := req.Validate(); err != nil {
 		h.logger.Error("validate signup request", "error", err)
-		lib.WriteProblem(w, r, lib.ProblemDetails{
-			Type:   lib.ProblemTypeValidationError,
-			Title:  "Validation Failed",
-			Status: http.StatusBadRequest,
-			Detail: "one or more fields are invalid",
-			Errors: err.Fields(),
-		})
-		return
+		var vErr *lib.HttpValidationError
+		if errors.As(err, &vErr) {
+			lib.WriteProblem(w, r, lib.ProblemDetails{
+				Type:   lib.ProblemTypeValidationError,
+				Title:  "Validation Failed",
+				Status: http.StatusBadRequest,
+				Detail: "one or more fields are invalid",
+				Errors: vErr.Fields(),
+			})
+			return
+		}
 	}
 
 	u := req.ToUser()

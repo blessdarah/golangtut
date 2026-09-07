@@ -6,6 +6,7 @@ import (
 	"blessdarah/tuts/internal/model"
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 
 	"net/http"
@@ -126,13 +127,15 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	vErrs := req.Validate(ctx)
 	if vErrs != nil {
 		h.logger.Error("failed to validate event", "error", vErrs)
+		var vErr *lib.HttpValidationError
+		errors.As(vErrs, &vErr)
 		lib.WriteProblem(w, r, lib.ProblemDetails{
 			Title:    "failed to validate event",
 			Status:   http.StatusBadRequest,
 			Detail:   "invalid request body",
 			Type:     lib.ProblemTypeValidationError,
 			Instance: r.URL.Path,
-			Errors:   vErrs.Fields(),
+			Errors:   vErr.Fields(),
 		})
 		return
 	}

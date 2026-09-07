@@ -6,6 +6,7 @@ import (
 	"blessdarah/tuts/pkg"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -112,12 +113,14 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 	vErrs := req.Validate()
 	if vErrs != nil {
 		h.logger.Error("validate payment", "error", vErrs)
+		var vErr *lib.HttpValidationError
+		errors.As(vErrs, &vErr) // convert to HttpValidationError
 		lib.WriteProblem(w, r, lib.ProblemDetails{
 			Type:   lib.ProblemTypeValidationError,
 			Title:  "Validation Failed",
 			Status: http.StatusBadRequest,
 			Detail: "one or more fields are invalid",
-			Errors: vErrs.Fields(),
+			Errors: vErr.Fields(),
 		})
 		return
 	}

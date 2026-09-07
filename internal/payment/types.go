@@ -19,7 +19,7 @@ type CreateRequest struct {
 	Email    string   `json:"email"`
 }
 
-func (res *CreateRequest) Validate() lib.HttpValidationError {
+func (res *CreateRequest) Validate() error {
 	errs := v.ValidateStruct(res,
 		v.Field(&res.EventID, v.Required, v.Length(36, 0)),
 		v.Field(&res.TicketID, v.Required, v.Length(36, 0)),

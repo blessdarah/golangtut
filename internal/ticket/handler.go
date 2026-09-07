@@ -90,12 +90,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	valErrs := req.Validate()
 	if valErrs != nil {
 		h.logger.Error("validate ticket", "error", valErrs)
+		var vErr *lib.HttpValidationError
+		errors.As(valErrs, &vErr)
 		lib.WriteProblem(w, r, lib.ProblemDetails{
 			Type:   lib.ProblemTypeValidationError,
 			Title:  "Validation Failed",
 			Status: http.StatusBadRequest,
 			Detail: "one or more fields are invalid",
-			Errors: valErrs.Fields(),
+			Errors: vErr.Fields(),
 		})
 		return
 	}

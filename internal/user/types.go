@@ -14,7 +14,7 @@ type CreateUserRequest struct {
 	Password string `json:"password"`
 }
 
-func (u *CreateUserRequest) Validate() lib.HttpValidationError {
+func (u *CreateUserRequest) Validate() error {
 	errs := v.ValidateStruct(u,
 		v.Field(&u.Name, v.Required, v.Length(2, 0)),
 		v.Field(&u.Email, v.Required, is.Email),
@@ -33,7 +33,7 @@ type UpdateUser struct {
 	Email *string `json:"email"`
 }
 
-func (u *UpdateUser) Validate() lib.HttpValidationError {
+func (u *UpdateUser) Validate() error {
 	errs := v.ValidateStruct(u,
 		v.Field(&u.Name, v.When(u.Name != nil, v.Length(2, 0))),
 		v.Field(&u.Email, v.When(u.Email != nil, is.Email)),
