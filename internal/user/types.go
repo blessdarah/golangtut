@@ -1,9 +1,11 @@
 package user
 
 import (
+	"blessdarah/tuts/internal/db/persistence"
 	"blessdarah/tuts/internal/lib"
 	"blessdarah/tuts/internal/model"
 
+	"github.com/brianvoe/gofakeit/v7"
 	v "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 )
@@ -56,5 +58,21 @@ func (u *CreateUserRequest) ToUser() model.User {
 		Name:     u.Name,
 		Email:    u.Email,
 		Password: u.Password,
+	}
+}
+
+func FakeUserModel() model.User {
+	return model.User{
+		Name:     gofakeit.Name(),
+		Email:    gofakeit.Email(),
+		Password: gofakeit.Password(true, true, true, true, false, 32),
+	}
+}
+
+func FakeUserPersistence() persistence.User {
+	return persistence.User{
+		Name:     gofakeit.Name(),
+		Email:    gofakeit.Email(),
+		Password: gofakeit.Password(true, true, true, true, false, 32),
 	}
 }

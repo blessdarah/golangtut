@@ -1,8 +1,12 @@
 package ticket
 
 import (
+	"blessdarah/tuts/internal/db/persistence"
 	"blessdarah/tuts/internal/lib"
+	"blessdarah/tuts/internal/model"
+	"time"
 
+	"github.com/brianvoe/gofakeit/v7"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
@@ -26,4 +30,44 @@ func (r *CreateRequest) Validate() error {
 	}
 
 	return lib.FormatError(errs.Error())
+}
+
+func FakeTicketModel(eventID string) *model.Ticket {
+	id := gofakeit.UUID()
+	type_ := gofakeit.Word()
+	price := gofakeit.Float64Range(0.0, 100.0)
+	desc := gofakeit.Sentence(1)
+	now := gofakeit.DateRange(time.Now(), time.Now().Add(time.Hour*24))
+	createdAt := now
+	updatedAt := now.Add(time.Hour * 24)
+
+	return &model.Ticket{
+		ID:          &id,
+		Type:        type_,
+		Price:       price,
+		EventID:     eventID,
+		Description: &desc,
+		CreatedAt:   &createdAt,
+		UpdatedAt:   &updatedAt,
+	}
+}
+
+func FakeTicketPersistence(eventID string) *persistence.Ticket {
+	id := gofakeit.UUID()
+	type_ := gofakeit.Word()
+	price := gofakeit.Float64Range(0.0, 100.0)
+	desc := gofakeit.Sentence(1)
+	now := gofakeit.DateRange(time.Now(), time.Now().Add(time.Hour*24))
+	createdAt := now
+	updatedAt := now
+
+	return &persistence.Ticket{
+		ID:          id,
+		Type:        type_,
+		Price:       price,
+		EventID:     eventID,
+		Description: &desc,
+		CreatedAt:   createdAt,
+		UpdatedAt:   updatedAt,
+	}
 }

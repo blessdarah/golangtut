@@ -1,12 +1,14 @@
 package event
 
 import (
+	"blessdarah/tuts/internal/db/persistence"
 	"blessdarah/tuts/internal/lib"
 	"blessdarah/tuts/internal/model"
 	"context"
 	"errors"
 	"time"
 
+	"github.com/brianvoe/gofakeit/v7"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
@@ -123,4 +125,36 @@ type Response struct {
 	Description *string   `json:"description"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+func FakeEventModel(userID string) *model.Event {
+	now := time.Now()
+	id := gofakeit.UUID()
+	desc := gofakeit.Sentence(1)
+
+	return &model.Event{
+		ID:          &id,
+		UserID:      &userID,
+		Name:        gofakeit.Sentence(1),
+		Venue:       gofakeit.StreetName(),
+		StartDate:   &now,
+		EndDate:     &now,
+		Description: &desc,
+	}
+}
+
+func FakeEventPersistence(userID string) *persistence.Event {
+	now := time.Now()
+	id := gofakeit.UUID()
+	desc := gofakeit.Sentence(1)
+
+	return &persistence.Event{
+		ID:          id,
+		UserID:      userID,
+		Name:        gofakeit.Sentence(1),
+		Venue:       gofakeit.StreetName(),
+		StartDate:   now,
+		EndDate:     now,
+		Description: &desc,
+	}
 }

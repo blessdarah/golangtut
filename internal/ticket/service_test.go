@@ -2,8 +2,10 @@ package ticket_test
 
 import (
 	"blessdarah/tuts/internal/db/persistence"
+	"blessdarah/tuts/internal/model"
 	"blessdarah/tuts/internal/ticket"
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -36,7 +38,7 @@ func (r *mockTicketRepository) GetByID(
 			return t, nil
 		}
 	}
-	return nil, nil
+	return nil, fmt.Errorf("ticket not found")
 }
 
 func (r *mockTicketRepository) Update(
@@ -127,6 +129,74 @@ func TestGetAll(t *testing.T) {
 	})
 }
 
-func RunServiceTest(t *testing.T) {
-	TestGetAll(t)
+func TestCreate(t *testing.T) {
+	repo := NewRepository(t)
+	service := ticket.NewService(repo)
+	t.Run("Should create a ticket", func(t *testing.T) {
+		desc := gofakeit.Sentence(1)
+		id := gofakeit.UUID()
+		now := time.Now()
+		ticket := model.Ticket{
+			ID:          &id,
+			Type:        gofakeit.Word(),
+			Price:       gofakeit.Float64Range(0.0, 100.0),
+			EventID:     gofakeit.UUID(),
+			Description: &desc,
+			CreatedAt:   &now,
+			UpdatedAt:   &now,
+		}
+
+		got, err := service.Create(context.TODO(), ticket)
+		if err != nil {
+			t.Fatal(err, "failed to create ticket")
+		}
+
+		assert.Equal(t, *ticket.ID, *got.ID)
+		assert.Equal(t, ticket.Type, got.Type)
+		assert.Equal(t, ticket.Price, got.Price)
+		assert.Equal(t, ticket.EventID, got.EventID)
+		assert.Equal(t, *ticket.Description, *got.Description)
+		assert.Equal(t, *ticket.CreatedAt, *got.CreatedAt)
+		assert.Equal(t, *ticket.UpdatedAt, *got.UpdatedAt)
+	})
+}
+
+func TestGetByID(t *testing.T) {
+	t.Run("get by id", func(t *testing.T) {
+		repo := NewRepository(t)
+		desc := gofakeit.Sentence(1)
+		id := gofakeit.UUID()
+		fakeTicket := persistence.Ticket{
+			ID:          id,
+			Type:        gofakeit.Word(),
+			Price:       gofakeit.Float64Range(0.0, 100.0),
+			EventID:     gofakeit.UUID(),
+			Description: &desc,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+		}
+		repo.data = append(repo.data, &fakeTicket)
+
+		service := ticket.NewService(repo)
+		got, err := service.GetByID(context.TODO(), id)
+
+		assert.NoError(t, err)
+
+		assert.Equal(t, fakeTicket.ID, *got.ID)
+		assert.Equal(t, fakeTicket.Type, got.Type)
+		assert.Equal(t, fakeTicket.Price, got.Price)
+		assert.Equal(t, fakeTicket.EventID, got.EventID)
+		assert.Equal(t, fakeTicket.Description, got.Description)
+		assert.Equal(t, fakeTicket.CreatedAt, *got.CreatedAt)
+		assert.Equal(t, fakeTicket.UpdatedAt, *got.UpdatedAt)
+	})
+
+	t.Run("get by id not found", func(t *testing.T) {
+		repo := NewRepository(t)
+		service := ticket.NewService(repo)
+		_, err := service.GetByID(context.TODO(), gofakeit.UUID())
+
+		assert.Error(t, err)
+		assert.Equal(t, "ticket not found", err.Error())
+	})
 }
