@@ -55,6 +55,7 @@ func (r *ticketRepositoryTestCase) setup(u *persistence.User, e *persistence.Eve
 	_, err = r.eventRepo.Create(context.TODO(), *e)
 	assert.NoError(r.t, err, "event repo: create event")
 }
+
 func TestCreateTicket(t *testing.T) {
 	deps := NewTicketRepositoryTestCase(t)
 	fakeuser := user.FakeUserPersistence()
@@ -85,4 +86,5 @@ func TestCreateTicket(t *testing.T) {
 		assert.NoError(t, err, "repo: count tickets")
 		assert.Equal(t, count, 1)
 	})
+
 }

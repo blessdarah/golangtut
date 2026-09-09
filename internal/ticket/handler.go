@@ -64,12 +64,12 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	_, ok := auth.UserIDFromContext(r.Context())
 
 	if !ok {
-		h.logger.Error("unathorizied", "error", "no user id in context")
+		h.logger.Error("unauthorized", "error", "no user id in context")
 		lib.WriteProblem(w, r, lib.ProblemDetails{
-			Type:   lib.ProblemTypeInternalError,
-			Title:  "Internal Server Error",
-			Status: http.StatusInternalServerError,
-			Detail: "unathorized",
+			Type:   lib.ProblemTypeValidationError,
+			Title:  "Unauthorized",
+			Status: http.StatusUnauthorized,
+			Detail: "unauthorized",
 		})
 		return
 	}
@@ -152,12 +152,12 @@ func (h *Handler) GetTicket(w http.ResponseWriter, r *http.Request) {
 	_, ok := auth.UserIDFromContext(r.Context())
 
 	if !ok {
-		h.logger.Error("unathorizied", "error", "no user id in context")
+		h.logger.Error("unauthorized", "error", "no user id in context")
 		lib.WriteProblem(w, r, lib.ProblemDetails{
-			Type:   lib.ProblemTypeInternalError,
-			Title:  "Internal Server Error",
-			Status: http.StatusInternalServerError,
-			Detail: "unathorized",
+			Type:   lib.ProblemTypeValidationError,
+			Title:  "Unauthorized",
+			Status: http.StatusUnauthorized,
+			Detail: "unauthorized",
 		})
 		return
 	}

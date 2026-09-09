@@ -11,15 +11,19 @@ import (
 	"github.com/go-oauth2/oauth2/v4/models"
 	"github.com/go-oauth2/oauth2/v4/server"
 	"github.com/go-oauth2/oauth2/v4/store"
+	"github.com/google/uuid"
 )
 
 type OAuthServer interface {
 	HandleTokenRequest(w http.ResponseWriter, r *http.Request) error
 	ValidateBearerToken(r *http.Request) (string, error)
+	IssueTestToken(userID string) (string, error)
 }
 
 type oauthServer struct {
-	server *server.Server
+	server     *server.Server
+	tokenStore oauth2.TokenStore
+	clientID   string
 }
 
 func NewOAuthServer(clientID, clientSecret string, accessTokenTTLMinutes, refreshTokenTTLHours int, svc *Service) (OAuthServer, error) {
@@ -33,8 +37,13 @@ func NewOAuthServer(clientID, clientSecret string, accessTokenTTLMinutes, refres
 		return nil, errors.New("invalid oauth refresh token ttl")
 	}
 
+	tokenStore, err := store.NewMemoryTokenStore()
+	if err != nil {
+		return nil, err
+	}
+
 	manager := manage.NewDefaultManager()
-	manager.MustTokenStorage(store.NewMemoryTokenStore())
+	manager.MustTokenStorage(tokenStore, nil)
 	manager.SetPasswordTokenCfg(&manage.Config{
 		AccessTokenExp:    time.Duration(accessTokenTTLMinutes) * time.Minute,
 		RefreshTokenExp:   time.Duration(refreshTokenTTLHours) * time.Hour,
@@ -42,7 +51,7 @@ func NewOAuthServer(clientID, clientSecret string, accessTokenTTLMinutes, refres
 	})
 
 	clientStore := store.NewClientStore()
-	err := clientStore.Set(clientID, &models.Client{
+	err = clientStore.Set(clientID, &models.Client{
 		ID:     clientID,
 		Secret: clientSecret,
 	})
@@ -58,7 +67,7 @@ func NewOAuthServer(clientID, clientSecret string, accessTokenTTLMinutes, refres
 		return svc.ValidateCredentials(username, password)
 	})
 
-	return &oauthServer{server: srv}, nil
+	return &oauthServer{server: srv, tokenStore: tokenStore, clientID: clientID}, nil
 }
 
 func (s *oauthServer) HandleTokenRequest(w http.ResponseWriter, r *http.Request) error {
@@ -72,4 +81,20 @@ func (s *oauthServer) ValidateBearerToken(r *http.Request) (string, error) {
 	}
 
 	return tokenInfo.GetUserID(), nil
+}
+
+func (s *oauthServer) IssueTestToken(userID string) (string, error) {
+	token := uuid.NewString()
+	err := s.tokenStore.Create(context.Background(), &models.Token{
+		ClientID:        s.clientID,
+		UserID:          userID,
+		Access:          token,
+		AccessCreateAt:  time.Now(),
+		AccessExpiresIn: time.Hour,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }
